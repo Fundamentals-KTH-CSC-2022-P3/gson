@@ -25,7 +25,7 @@ public class JsonSchemaMatcherTest extends TestCase {
             "  \"$id\": \"https://example.com/product.schema.json\",\n" +
             "  \"title\": \"Product\",\n" +
             "  \"description\": \"A product from Acme's catalog\",\n" +
-            "  \"type\": \"object\",\n" +
+            "  \"type\": \"object\"\n" +
             "}";
 
     public void testValidatorCanParseSchema() {
