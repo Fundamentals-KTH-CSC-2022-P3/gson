@@ -2,61 +2,31 @@ package com.google.gson;
 
 public class JsonSchemaMatcher {
 
-    private String schemaUri;
-    private String idUri;
-    private String title = "";
-    private String description = "";
-    private String rootType = "";
+    private final JsonObject schemaRoot;
 
     public JsonSchemaMatcher(String jsonSchema) {
         JsonParser parser = new JsonParser();
         JsonElement parsed = parser.parse(jsonSchema);
-        JsonObject object = parsed.getAsJsonObject();
-
-        setSchemaUri(object.get("$schema").getAsString());
-        setIdUri(object.get("$id").getAsString());
-        setTitle(object.get("title").getAsString());
-        setDescription(object.get("description").getAsString());
-        setRootType(object.get("type").getAsString());
+        schemaRoot = parsed.getAsJsonObject();
     }
 
     public String getSchemaUri() {
-        return schemaUri;
-    }
-
-    public void setSchemaUri(String schemaUri) {
-        this.schemaUri = schemaUri;
+        return schemaRoot.get("$schema").getAsString();
     }
 
     public String getIdUri() {
-        return idUri;
-    }
-
-    public void setIdUri(String idUri) {
-        this.idUri = idUri;
+        return schemaRoot.get("$id").getAsString();
     }
 
     public String getTitle() {
-        return title;
+        return schemaRoot.get("title").getAsString();
     }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
+    public String getRootDescription() {
+        return schemaRoot.get("description").getAsString();
     }
 
     public String getRootType() {
-        return rootType;
-    }
-
-    public void setRootType(String rootType) {
-        this.rootType = rootType;
+        return schemaRoot.get("type").getAsString();
     }
 }

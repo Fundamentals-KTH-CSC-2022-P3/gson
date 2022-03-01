@@ -45,7 +45,7 @@ public class JsonSchemaMatcherTest extends TestCase {
 
     public void testValidatorCanParseDescription() {
         JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString);
-        assertEquals("A product from Acme's catalog", validator.getDescription());
+        assertEquals("A product from Acme's catalog", validator.getRootDescription());
     }
 
     public void testValidatorCanParseRootType() {
