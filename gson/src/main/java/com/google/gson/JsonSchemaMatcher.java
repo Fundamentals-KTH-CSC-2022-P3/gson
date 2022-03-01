@@ -3,11 +3,12 @@ package com.google.gson;
 public class JsonSchemaMatcher {
 
     private final JsonObject schemaRoot;
+    private final JsonElement instance;
 
-    public JsonSchemaMatcher(String jsonSchema) {
+    public JsonSchemaMatcher(String jsonSchema, String jsonInstance) {
         JsonParser parser = new JsonParser();
-        JsonElement parsed = parser.parse(jsonSchema);
-        schemaRoot = parsed.getAsJsonObject();
+        schemaRoot = parser.parse(jsonSchema).getAsJsonObject();
+        instance = parser.parse(jsonInstance);
     }
 
     public String getSchemaUri() {

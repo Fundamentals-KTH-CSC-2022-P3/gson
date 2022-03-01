@@ -29,27 +29,27 @@ public class JsonSchemaMatcherTest extends TestCase {
             "}";
 
     public void testValidatorCanParseSchema() {
-        JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString);
+        JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString, "");
         assertEquals("https://json-schema.org/draft/2020-12/schema", validator.getSchemaUri());
     }
 
     public void testValidatorCanParseId() {
-        JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString);
+        JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString, "");
         assertEquals("https://example.com/product.schema.json", validator.getIdUri());
     }
 
     public void testValidatorCanParseTitle() {
-        JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString);
+        JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString, "");
         assertEquals("Product", validator.getTitle());
     }
 
     public void testValidatorCanParseDescription() {
-        JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString);
+        JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString,"");
         assertEquals("A product from Acme's catalog", validator.getRootDescription());
     }
 
     public void testValidatorCanParseRootType() {
-        JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString);
+        JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString,"");
         assertEquals("object", validator.getRootType());
     }
 }
