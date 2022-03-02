@@ -15,6 +15,10 @@ public class JsonSchemaMatcher {
     }
 
     private boolean matchingTypes(JsonElement instance, JsonObject schema) {
+        // If the sub-schema does not have a "type" property then the instance can have any type.
+        if (!schema.has("type"))
+            return true;
+
         String type = schema.get("type").getAsString();
 
         switch (type) {
@@ -63,15 +67,16 @@ public class JsonSchemaMatcher {
             }
         }
 
+        // If the sub-schema does not have a "properties" property then the instance can have any properties it wants.
         if (!schema.has("properties"))
             return true;
 
         JsonObject properties = schema.getAsJsonObject("properties");
 
-        // Check that each property in the sub-schema matches against the instance object properties.
+        // Check that each property in the sub-schema matches against the instance properties.
         for (String key : properties.keySet()) {
 
-            // The instance object is not required to have all the properties defined in the sub-schema.
+            // The instance is not required to have all the properties defined in the sub-schema.
             if (!instanceObject.has(key))
                 continue;
 
@@ -83,12 +88,12 @@ public class JsonSchemaMatcher {
     }
 
     private boolean arrayMatches(JsonArray instanceArray, JsonObject schema) {
-        // Check if the schema has the "minItems" property and the array has
+        // Check if the sub-schema has the "minItems" property and then the array must have
         // at least as many elements specified by the "minItems" property.
         if (schema.has("minItems") && instanceArray.size() < schema.get("minItems").getAsInt())
             return false;
 
-        // Check if the schema has the "uniqueItems" property and then all elements in the array must be unique.
+        // Check if the sub-schema has the "uniqueItems" property, if so, all elements in the array must be unique.
         if (schema.has("uniqueItems")) {
             Set<JsonElement> found = new HashSet<>();
 
@@ -100,7 +105,7 @@ public class JsonSchemaMatcher {
             }
         }
 
-        // Check if the schema has the "items" property.
+        // If the sub-schema does not have the "items" property then the array can contain any elements.
         if (!schema.has("items"))
             return true;
 
@@ -110,6 +115,7 @@ public class JsonSchemaMatcher {
         if (items.isJsonPrimitive() && !items.getAsBoolean())
             return instanceArray.isEmpty();
 
+        // Check that each element in the instance matches against the "items" object.
         for (JsonElement element : instanceArray) {
             if (!matches(element, items.getAsJsonObject()))
                 return false;
@@ -118,8 +124,8 @@ public class JsonSchemaMatcher {
         return true;
     }
 
-    private boolean primitiveMatches(JsonPrimitive primitive, JsonObject schema) {
-
+    private boolean primitiveMatches(JsonPrimitive instancePrimitive, JsonObject schema) {
+        return false;
     }
 
     public boolean matches() {
@@ -130,12 +136,14 @@ public class JsonSchemaMatcher {
         if (schema.isJsonPrimitive())
             return schema.getAsBoolean();
 
-        // If the schema is not a boolean it must be an object.
+        // If the sub-schema is not a boolean it must be an object.
         JsonObject schemaObject = schema.getAsJsonObject();
 
+        // Check that the instance has the correct type as defined by the sub-schema.
         if (!matchingTypes(instance, schemaObject))
             return false;
 
+        // Depending on the type of the instance we should perform the matching algorithm differently.
         if (instance.isJsonObject()) {
             return objectMatches(instance.getAsJsonObject(), schemaObject);
         } else if (instance.isJsonArray()) {
