@@ -20,23 +20,10 @@ import junit.framework.TestCase;
 
 public class JsonSchemaMatcherTest extends TestCase {
 
-    private String schemaString = "{\n" +
-            "  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n" +
-            "  \"$id\": \"https://example.com/product.schema.json\",\n" +
-            "  \"title\": \"Product\",\n" +
-            "  \"description\": \"A product from Acme's catalog\",\n" +
-            "  \"type\": \"object\"\n" +
-            "}";
-
     private String nestedObjectSchemaString = "{\n" +
-            "    \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n" +
-            "    \"$id\": \"https://example.com/product.schema.json\",\n" +
-            "    \"title\": \"Nested objects\",\n" +
-            "    \"description\": \"A nested objects JSON file\",\n" +
             "    \"type\": \"object\",\n" +
             "    \"properties\": {\n" +
             "        \"obj1\": {\n" +
-            "            \"description\": \"First object\",\n" +
             "            \"type\": \"object\",\n" +
             "            \"properties\": {\n" +
             "                \"nested\": {\n" +
@@ -45,7 +32,6 @@ public class JsonSchemaMatcherTest extends TestCase {
             "            }\n" +
             "        },\n" +
             "        \"obj2\": {\n" +
-            "            \"description\": \"Second object\",\n" +
             "            \"type\": \"object\",\n" +
             "            \"properties\": {\n" +
             "                \"nested\": {\n" +
@@ -91,10 +77,10 @@ public class JsonSchemaMatcherTest extends TestCase {
             "    }\n" +
             "}";
 
-    // "obj1" contains property "hello" which is not defined in the schema.
+    // "obj1" has the wrong type of property "nested" it should be an object but is an integer.
     private String nestedObjectInstanceFailingString = "{\n" +
             "    \"obj1\": {\n" +
-            "        \"hello\": {}\n" +
+            "        \"nested\": 2\n" +
             "    },\n" +
             "    \"obj2\": {\n" +
             "        \"nested\": {\n" +
@@ -105,7 +91,7 @@ public class JsonSchemaMatcherTest extends TestCase {
             "}";
 
     // "obj2" does not contain the required property "veryNested2".
-    private String getNestedObjectInstanceFailingString2 = "{\n" +
+    private String nestedObjectInstanceFailingString2 = "{\n" +
             "    \"obj1\": {},\n" +
             "    \"obj2\": {\n" +
             "        \"nested\": {\n" +
@@ -114,30 +100,28 @@ public class JsonSchemaMatcherTest extends TestCase {
             "    }\n" +
             "}";
 
-    public void testValidatorCanParseSchema() {
-        JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaString, "");
-        assertEquals("https://json-schema.org/draft/2020-12/schema", matcher.getSchemaUri());
-    }
+    private String arraySchemaString = "{\n" +
+            "    \"type\": \"array\",\n" +
+            "    \"items\": {\n" +
+            "        \"type\": \"object\"       \n" +
+            "    },\n" +
+            "    \"minItems\": 2,\n" +
+            "    \"uniqueItems\": true\n" +
+            "}";
 
-    public void testValidatorCanParseId() {
-        JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaString, "");
-        assertEquals("https://example.com/product.schema.json", matcher.getIdUri());
-    }
+    private String arrayInstanceSuccessfulString = "[\n" +
+            "    {},\n" +
+            "    { \"obj\": {}}\n" +
+            "]";
 
-    public void testValidatorCanParseTitle() {
-        JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaString, "");
-        assertEquals("Product", matcher.getTitle());
-    }
+    private String arrayInstanceUniqueFailing = "[\n" +
+            "    {},\n" +
+            "    {}\n" +
+            "]";
 
-    public void testValidatorCanParseDescription() {
-        JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaString,"");
-        assertEquals("A product from Acme's catalog", matcher.getRootDescription());
-    }
-
-    public void testValidatorCanParseRootType() {
-        JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaString,"");
-        assertEquals("object", matcher.getRootType());
-    }
+    private String arrayInstanceMinItemsFailing = "[\n" +
+            "    {}\n" +
+            "]";
 
     public void testNestedObjectSuccessful() {
         JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString, nestedObjectInstanceSuccessfulString);
@@ -155,7 +139,22 @@ public class JsonSchemaMatcherTest extends TestCase {
     }
 
     public void testNestedObjectFailing2() {
-        JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString, getNestedObjectInstanceFailingString2);
+        JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString, nestedObjectInstanceFailingString2);
+        assertFalse(matcher.matches());
+    }
+
+    public void testArraySuccessful() {
+        JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString, arrayInstanceSuccessfulString);
+        assertTrue(matcher.matches());
+    }
+
+    public void testArrayUniqueFailing() {
+        JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString, arrayInstanceUniqueFailing);
+        assertFalse(matcher.matches());
+    }
+
+    public void testArrayMinItemsFailing() {
+        JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString, arrayInstanceMinItemsFailing);
         assertFalse(matcher.matches());
     }
 }
