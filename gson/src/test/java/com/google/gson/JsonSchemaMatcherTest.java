@@ -28,28 +28,134 @@ public class JsonSchemaMatcherTest extends TestCase {
             "  \"type\": \"object\"\n" +
             "}";
 
+    private String nestedObjectSchemaString = "{\n" +
+            "    \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n" +
+            "    \"$id\": \"https://example.com/product.schema.json\",\n" +
+            "    \"title\": \"Nested objects\",\n" +
+            "    \"description\": \"A nested objects JSON file\",\n" +
+            "    \"type\": \"object\",\n" +
+            "    \"properties\": {\n" +
+            "        \"obj1\": {\n" +
+            "            \"description\": \"First object\",\n" +
+            "            \"type\": \"object\",\n" +
+            "            \"properties\": {\n" +
+            "                \"nested\": {\n" +
+            "                    \"type\": \"object\"\n" +
+            "                }\n" +
+            "            }\n" +
+            "        },\n" +
+            "        \"obj2\": {\n" +
+            "            \"description\": \"Second object\",\n" +
+            "            \"type\": \"object\",\n" +
+            "            \"properties\": {\n" +
+            "                \"nested\": {\n" +
+            "                    \"type\": \"object\",\n" +
+            "                    \"properties\": {\n" +
+            "                        \"veryNested1\": {\n" +
+            "                            \"type\": \"object\"\n" +
+            "                        },\n" +
+            "                        \"veryNested2\": {\n" +
+            "                            \"type\": \"object\"\n" +
+            "                        }\n" +
+            "                    },\n" +
+            "                    \"required\": [\n" +
+            "                        \"veryNested2\"\n" +
+            "                    ]\n" +
+            "                }\n" +
+            "            },\n" +
+            "            \"required\": [\n" +
+            "                \"nested\"\n" +
+            "            ]\n" +
+            "        }\n" +
+            "    },\n" +
+            "    \"required\": [\n" +
+            "        \"obj2\"\n" +
+            "    ]\n" +
+            "}";
+
+    private String nestedObjectInstanceSuccessfulString = "{\n" +
+            "    \"obj1\": {},\n" +
+            "    \"obj2\": {\n" +
+            "        \"nested\": {\n" +
+            "            \"veryNested1\": {},\n" +
+            "            \"veryNested2\": {}\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+
+    private String nestedObjectInstanceSuccessfulString2 = "{\n" +
+            "    \"obj2\": {\n" +
+            "        \"nested\": {\n" +
+            "            \"veryNested2\": {}\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+
+    // "obj1" contains property "hello" which is not defined in the schema.
+    private String nestedObjectInstanceFailingString = "{\n" +
+            "    \"obj1\": {\n" +
+            "        \"hello\": {}\n" +
+            "    },\n" +
+            "    \"obj2\": {\n" +
+            "        \"nested\": {\n" +
+            "            \"veryNested1\": {},\n" +
+            "            \"veryNested2\": {}\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+
+    // "obj2" does not contain the required property "veryNested2".
+    private String getNestedObjectInstanceFailingString2 = "{\n" +
+            "    \"obj1\": {},\n" +
+            "    \"obj2\": {\n" +
+            "        \"nested\": {\n" +
+            "            \"veryNested1\": {}\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+
     public void testValidatorCanParseSchema() {
-        JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString, "");
-        assertEquals("https://json-schema.org/draft/2020-12/schema", validator.getSchemaUri());
+        JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaString, "");
+        assertEquals("https://json-schema.org/draft/2020-12/schema", matcher.getSchemaUri());
     }
 
     public void testValidatorCanParseId() {
-        JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString, "");
-        assertEquals("https://example.com/product.schema.json", validator.getIdUri());
+        JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaString, "");
+        assertEquals("https://example.com/product.schema.json", matcher.getIdUri());
     }
 
     public void testValidatorCanParseTitle() {
-        JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString, "");
-        assertEquals("Product", validator.getTitle());
+        JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaString, "");
+        assertEquals("Product", matcher.getTitle());
     }
 
     public void testValidatorCanParseDescription() {
-        JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString,"");
-        assertEquals("A product from Acme's catalog", validator.getRootDescription());
+        JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaString,"");
+        assertEquals("A product from Acme's catalog", matcher.getRootDescription());
     }
 
     public void testValidatorCanParseRootType() {
-        JsonSchemaMatcher validator = new JsonSchemaMatcher(schemaString,"");
-        assertEquals("object", validator.getRootType());
+        JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaString,"");
+        assertEquals("object", matcher.getRootType());
+    }
+
+    public void testNestedObjectSuccessful() {
+        JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString, nestedObjectInstanceSuccessfulString);
+        assertTrue(matcher.matches());
+    }
+
+    public void testNestedObjectSuccessful2() {
+        JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString, nestedObjectInstanceSuccessfulString2);
+        assertTrue(matcher.matches());
+    }
+
+    public void testNestedObjectFailing() {
+        JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString, nestedObjectInstanceFailingString);
+        assertFalse(matcher.matches());
+    }
+
+    public void testNestedObjectFailing2() {
+        JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString, getNestedObjectInstanceFailingString2);
+        assertFalse(matcher.matches());
     }
 }
