@@ -118,6 +118,10 @@ public class JsonSchemaMatcher {
         return true;
     }
 
+    private boolean primitiveMatches(JsonPrimitive primitive, JsonObject schema) {
+
+    }
+
     public boolean matches() {
         return matches(instanceRoot, schemaRoot);
     }
@@ -136,6 +140,8 @@ public class JsonSchemaMatcher {
             return objectMatches(instance.getAsJsonObject(), schemaObject);
         } else if (instance.isJsonArray()) {
             return arrayMatches(instance.getAsJsonArray(), schemaObject);
+        } else if (instance.isJsonPrimitive()) {
+            return primitiveMatches(instance.getAsJsonPrimitive(), schemaObject);
         } else {
             return false;
         }
