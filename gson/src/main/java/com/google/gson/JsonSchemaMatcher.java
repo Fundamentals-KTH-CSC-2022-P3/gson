@@ -1,5 +1,8 @@
 package com.google.gson;
 
+import com.google.gson.stream.JsonReader;
+
+import java.io.Reader;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -12,12 +15,39 @@ public class JsonSchemaMatcher {
   private final JsonElement schemaRoot;
 
   /**
+   * Creates a new {@code JsonSchemaMatcher} instance from a valid schema JsonElement.
+   *
+   * @param jsonSchema the schema as a {@code JsonElement}.
+   */
+  public JsonSchemaMatcher(JsonElement jsonSchema) {
+    schemaRoot = jsonSchema;
+  }
+
+  /**
    * Creates a new {@code JsonSchemaMatcher} instance from a valid schema string.
    *
    * @param jsonSchema the schema as a {@code String}.
    */
   public JsonSchemaMatcher(String jsonSchema) {
-    schemaRoot = new JsonParser().parse(jsonSchema);
+    this(JsonParser.parseString(jsonSchema));
+  }
+
+  /**
+   * Creates a new {@code JsonSchemaMatcher} instance from a {@code Reader} of a valid schema.
+   *
+   * @param jsonSchema the {@code Reader} of a schema.
+   */
+  public JsonSchemaMatcher(Reader jsonSchema) {
+    this(JsonParser.parseReader(jsonSchema));
+  }
+
+  /**
+   * Creates a new {@code JsonSchemaMatcher} instance from a {@code JsonReader} of a valid schema.
+   *
+   * @param jsonSchema the {@code JsonReader} of a schema.
+   */
+  public JsonSchemaMatcher(JsonReader jsonSchema) {
+    this(JsonParser.parseReader(jsonSchema));
   }
 
   /**
@@ -239,24 +269,13 @@ public class JsonSchemaMatcher {
   }
 
   /**
-   * Matches the schema against a JSON instance.
-   *
-   * @param jsonInstance the JSON instance as a {@code String}.
-   * @return true if the instance matches against the schema, otherwise false.
-   */
-  public boolean matches(String jsonInstance) {
-    JsonElement instanceRoot = new JsonParser().parse(jsonInstance);
-    return matches(instanceRoot, schemaRoot);
-  }
-
-  /**
    * Matches an instance (or sub-instance) against a schema (or sub-schema).
    *
    * @param instance the instance (or sub-instance).
    * @param schema   the schema (or sub-schema).
    * @return true if the instance matches against the schema, otherwise false.
    */
-  public boolean matches(JsonElement instance, JsonElement schema) {
+  private boolean matches(JsonElement instance, JsonElement schema) {
     if (schema.isJsonPrimitive())
       return schema.getAsBoolean();
 
@@ -277,5 +296,45 @@ public class JsonSchemaMatcher {
     } else {
       return false;
     }
+  }
+
+  /**
+   * Matches the schema against a JSON instance.
+   *
+   * @param jsonInstance the JSON instance as a {@code JsonElement}.
+   * @return true if the instance matches against the schema, otherwise false.
+   */
+  public boolean matches(JsonElement jsonInstance) {
+    return matches(jsonInstance, schemaRoot);
+  }
+
+  /**
+   * Matches the schema against a JSON instance.
+   *
+   * @param jsonInstance the JSON instance as a {@code String}.
+   * @return true if the instance matches against the schema, otherwise false.
+   */
+  public boolean matches(String jsonInstance) {
+    return matches(JsonParser.parseString(jsonInstance));
+  }
+
+  /**
+   * Matches the schema against a JSON instance.
+   *
+   * @param jsonInstance a {@code Reader} of a JSON instance.
+   * @return true if the instance matches against the schema, otherwise false.
+   */
+  public boolean matches(Reader jsonInstance) {
+    return matches(JsonParser.parseReader(jsonInstance));
+  }
+
+  /**
+   * Matches the schema against a JSON instance.
+   *
+   * @param jsonInstance a {@code JsonReader} of a JSON instance.
+   * @return true if the instance matches against the schema, otherwise false.
+   */
+  public boolean matches(JsonReader jsonInstance) {
+    return matches(JsonParser.parseReader(jsonInstance));
   }
 }

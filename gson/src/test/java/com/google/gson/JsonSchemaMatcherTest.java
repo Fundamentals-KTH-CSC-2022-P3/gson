@@ -16,7 +16,13 @@
 
 package com.google.gson;
 
+import com.google.gson.stream.JsonReader;
 import junit.framework.TestCase;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 
 public class JsonSchemaMatcherTest extends TestCase {
 
@@ -216,5 +222,33 @@ public class JsonSchemaMatcherTest extends TestCase {
   public void testNumberExclusiveMinMaxFailingTooLarge() {
     JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberExclusiveMinMaxSchemaString);
     assertFalse(matcher.matches(numberExclusiveMinMaxFailingTooLarge));
+  }
+
+  public void testReaderAPI() {
+    Reader schemaReader = new StringReader("true");
+    Reader instanceReader = new StringReader("{}");
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaReader);
+    assertTrue(matcher.matches(instanceReader));
+  }
+
+  public void testJsonReaderAPI() {
+    JsonReader schemaJsonReader = new JsonReader(new StringReader("true"));
+    JsonReader instanceJsonReader = new JsonReader(new StringReader("{}"));
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaJsonReader);
+    assertTrue(matcher.matches(instanceJsonReader));
+  }
+
+  public void testStringAPI() {
+    String schemaString = "true";
+    String instanceString = "{}";
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaString);
+    assertTrue(matcher.matches(instanceString));
+  }
+
+  public void testJsonElementAPI() {
+    JsonElement schemaJsonElement = JsonParser.parseString("true");
+    JsonElement instanceJsonElement = JsonParser.parseString("{}");
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaJsonElement);
+    assertTrue(matcher.matches(instanceJsonElement));
   }
 }
