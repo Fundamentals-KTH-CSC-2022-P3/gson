@@ -4,7 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * The {@code JsonSchemaMatcher} class is responsible for matching a schema file against a JSON instance.
+ * The {@code JsonSchemaMatcher} class is responsible for matching a JSON schema against a JSON instance.
  */
 public class JsonSchemaMatcher {
 
