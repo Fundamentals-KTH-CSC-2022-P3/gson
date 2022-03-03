@@ -20,141 +20,201 @@ import junit.framework.TestCase;
 
 public class JsonSchemaMatcherTest extends TestCase {
 
-    private String nestedObjectSchemaString = "{\n" +
-            "    \"type\": \"object\",\n" +
-            "    \"properties\": {\n" +
-            "        \"obj1\": {\n" +
-            "            \"type\": \"object\",\n" +
-            "            \"properties\": {\n" +
-            "                \"nested\": {\n" +
-            "                    \"type\": \"object\"\n" +
-            "                }\n" +
-            "            }\n" +
-            "        },\n" +
-            "        \"obj2\": {\n" +
-            "            \"type\": \"object\",\n" +
-            "            \"properties\": {\n" +
-            "                \"nested\": {\n" +
-            "                    \"type\": \"object\",\n" +
-            "                    \"properties\": {\n" +
-            "                        \"veryNested1\": {\n" +
-            "                            \"type\": \"object\"\n" +
-            "                        },\n" +
-            "                        \"veryNested2\": {\n" +
-            "                            \"type\": \"object\"\n" +
-            "                        }\n" +
-            "                    },\n" +
-            "                    \"required\": [\n" +
-            "                        \"veryNested2\"\n" +
-            "                    ]\n" +
-            "                }\n" +
-            "            },\n" +
-            "            \"required\": [\n" +
-            "                \"nested\"\n" +
-            "            ]\n" +
-            "        }\n" +
-            "    },\n" +
-            "    \"required\": [\n" +
-            "        \"obj2\"\n" +
-            "    ]\n" +
-            "}";
+  private String nestedObjectSchemaString = "{\n" +
+          "    \"type\": \"object\",\n" +
+          "    \"properties\": {\n" +
+          "        \"obj1\": {\n" +
+          "            \"type\": \"object\",\n" +
+          "            \"properties\": {\n" +
+          "                \"nested\": {\n" +
+          "                    \"type\": \"object\"\n" +
+          "                }\n" +
+          "            }\n" +
+          "        },\n" +
+          "        \"obj2\": {\n" +
+          "            \"type\": \"object\",\n" +
+          "            \"properties\": {\n" +
+          "                \"nested\": {\n" +
+          "                    \"type\": \"object\",\n" +
+          "                    \"properties\": {\n" +
+          "                        \"veryNested1\": {\n" +
+          "                            \"type\": \"object\"\n" +
+          "                        },\n" +
+          "                        \"veryNested2\": {\n" +
+          "                            \"type\": \"object\"\n" +
+          "                        }\n" +
+          "                    },\n" +
+          "                    \"required\": [\n" +
+          "                        \"veryNested2\"\n" +
+          "                    ]\n" +
+          "                }\n" +
+          "            },\n" +
+          "            \"required\": [\n" +
+          "                \"nested\"\n" +
+          "            ]\n" +
+          "        }\n" +
+          "    },\n" +
+          "    \"required\": [\n" +
+          "        \"obj2\"\n" +
+          "    ]\n" +
+          "}";
 
-    private String nestedObjectInstanceSuccessfulString = "{\n" +
-            "    \"obj1\": {},\n" +
-            "    \"obj2\": {\n" +
-            "        \"nested\": {\n" +
-            "            \"veryNested1\": {},\n" +
-            "            \"veryNested2\": {}\n" +
-            "        }\n" +
-            "    }\n" +
-            "}";
+  private String nestedObjectInstanceSuccessfulString = "{\n" +
+          "    \"obj1\": {},\n" +
+          "    \"obj2\": {\n" +
+          "        \"nested\": {\n" +
+          "            \"veryNested1\": {},\n" +
+          "            \"veryNested2\": {}\n" +
+          "        }\n" +
+          "    }\n" +
+          "}";
 
-    private String nestedObjectInstanceSuccessfulString2 = "{\n" +
-            "    \"obj2\": {\n" +
-            "        \"nested\": {\n" +
-            "            \"veryNested2\": {}\n" +
-            "        }\n" +
-            "    }\n" +
-            "}";
+  private String nestedObjectInstanceSuccessfulString2 = "{\n" +
+          "    \"obj2\": {\n" +
+          "        \"nested\": {\n" +
+          "            \"veryNested2\": {}\n" +
+          "        }\n" +
+          "    }\n" +
+          "}";
 
-    // "obj1" has the wrong type of property "nested" it should be an object but is an integer.
-    private String nestedObjectInstanceFailingString = "{\n" +
-            "    \"obj1\": {\n" +
-            "        \"nested\": 2\n" +
-            "    },\n" +
-            "    \"obj2\": {\n" +
-            "        \"nested\": {\n" +
-            "            \"veryNested1\": {},\n" +
-            "            \"veryNested2\": {}\n" +
-            "        }\n" +
-            "    }\n" +
-            "}";
+  // "obj1" has the wrong type of property "nested" it should be an object but is an integer.
+  private String nestedObjectInstanceFailingString = "{\n" +
+          "    \"obj1\": {\n" +
+          "        \"nested\": 2\n" +
+          "    },\n" +
+          "    \"obj2\": {\n" +
+          "        \"nested\": {\n" +
+          "            \"veryNested1\": {},\n" +
+          "            \"veryNested2\": {}\n" +
+          "        }\n" +
+          "    }\n" +
+          "}";
 
-    // "obj2" does not contain the required property "veryNested2".
-    private String nestedObjectInstanceFailingString2 = "{\n" +
-            "    \"obj1\": {},\n" +
-            "    \"obj2\": {\n" +
-            "        \"nested\": {\n" +
-            "            \"veryNested1\": {}\n" +
-            "        }\n" +
-            "    }\n" +
-            "}";
+  // "obj2" does not contain the required property "veryNested2".
+  private String nestedObjectInstanceFailingString2 = "{\n" +
+          "    \"obj1\": {},\n" +
+          "    \"obj2\": {\n" +
+          "        \"nested\": {\n" +
+          "            \"veryNested1\": {}\n" +
+          "        }\n" +
+          "    }\n" +
+          "}";
 
-    private String arraySchemaString = "{\n" +
-            "    \"type\": \"array\",\n" +
-            "    \"items\": {\n" +
-            "        \"type\": \"object\"       \n" +
-            "    },\n" +
-            "    \"minItems\": 2,\n" +
-            "    \"uniqueItems\": true\n" +
-            "}";
+  private String arraySchemaString = "{\n" +
+          "    \"type\": \"array\",\n" +
+          "    \"items\": {\n" +
+          "        \"type\": \"object\"       \n" +
+          "    },\n" +
+          "    \"minItems\": 2,\n" +
+          "    \"uniqueItems\": true\n" +
+          "}";
 
-    private String arrayInstanceSuccessfulString = "[\n" +
-            "    {},\n" +
-            "    { \"obj\": {}}\n" +
-            "]";
+  private String arrayInstanceSuccessfulString = "[\n" +
+          "    {},\n" +
+          "    { \"obj\": {}}\n" +
+          "]";
 
-    private String arrayInstanceUniqueFailing = "[\n" +
-            "    {},\n" +
-            "    {}\n" +
-            "]";
+  private String arrayInstanceUniqueFailing = "[\n" +
+          "    {},\n" +
+          "    {}\n" +
+          "]";
 
-    private String arrayInstanceMinItemsFailing = "[\n" +
-            "    {}\n" +
-            "]";
+  private String arrayInstanceMinItemsFailing = "[\n" +
+          "    {}\n" +
+          "]";
 
-    public void testNestedObjectSuccessful() {
-        JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString, nestedObjectInstanceSuccessfulString);
-        assertTrue(matcher.matches());
-    }
+  private String numberMaxMinSchemaString = "{\n" +
+          "    \"type\": \"number\",\n" +
+          "    \"minimum\": 1,\n" +
+          "    \"maximum\": 3\n" +
+          "}";
 
-    public void testNestedObjectSuccessful2() {
-        JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString, nestedObjectInstanceSuccessfulString2);
-        assertTrue(matcher.matches());
-    }
+  private String numberMinMaxInstanceSuccessful = "1";
 
-    public void testNestedObjectFailing() {
-        JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString, nestedObjectInstanceFailingString);
-        assertFalse(matcher.matches());
-    }
+  private String numberMinMaxInstanceSuccessful2 = "2";
 
-    public void testNestedObjectFailing2() {
-        JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString, nestedObjectInstanceFailingString2);
-        assertFalse(matcher.matches());
-    }
+  private String numberMinMaxInstanceSuccessful3 = "3";
 
-    public void testArraySuccessful() {
-        JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString, arrayInstanceSuccessfulString);
-        assertTrue(matcher.matches());
-    }
+  private String numberMinMaxInstanceFailingTooSmall = "0";
 
-    public void testArrayUniqueFailing() {
-        JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString, arrayInstanceUniqueFailing);
-        assertFalse(matcher.matches());
-    }
+  private String numberMinMaxInstanceFailingTooLarge = "4";
 
-    public void testArrayMinItemsFailing() {
-        JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString, arrayInstanceMinItemsFailing);
-        assertFalse(matcher.matches());
-    }
+  private String numberExclusiveMinMaxSchemaString = "{\n" +
+          "    \"type\": \"number\",\n" +
+          "    \"exclusiveMinimum\": 1,\n" +
+          "    \"exclusiveMaximum\": 3\n" +
+          "}";
+
+  private String numberExclusiveMinMaxSuccessful = "2";
+
+  private String numberExclusiveMinMaxFailingTooSmall = "1";
+
+  private String numberExclusiveMinMaxFailingTooLarge = "3";
+
+  public void testNestedObjectSuccessful() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString);
+    assertTrue(matcher.matches(nestedObjectInstanceSuccessfulString));
+  }
+
+  public void testNestedObjectSuccessful2() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString);
+    assertTrue(matcher.matches(nestedObjectInstanceSuccessfulString2));
+  }
+
+  public void testNestedObjectFailing() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString);
+    assertFalse(matcher.matches(nestedObjectInstanceFailingString));
+  }
+
+  public void testNestedObjectFailing2() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString);
+    assertFalse(matcher.matches(nestedObjectInstanceFailingString2));
+  }
+
+  public void testArraySuccessful() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString);
+    assertTrue(matcher.matches(arrayInstanceSuccessfulString));
+  }
+
+  public void testArrayUniqueFailing() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString);
+    assertFalse(matcher.matches(arrayInstanceUniqueFailing));
+  }
+
+  public void testArrayMinItemsFailing() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString);
+    assertFalse(matcher.matches(arrayInstanceMinItemsFailing));
+  }
+
+  public void testNumberMinMaxSuccessful() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberMaxMinSchemaString);
+    assertTrue(matcher.matches(numberMinMaxInstanceSuccessful));
+    assertTrue(matcher.matches(numberMinMaxInstanceSuccessful2));
+    assertTrue(matcher.matches(numberMinMaxInstanceSuccessful3));
+  }
+
+  public void testNumberMinMaxFailingTooSmall() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberMaxMinSchemaString);
+    assertFalse(matcher.matches(numberMinMaxInstanceFailingTooSmall));
+  }
+
+  public void testNumberMinMaxFailingTooLarge() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberMaxMinSchemaString);
+    assertFalse(matcher.matches(numberMinMaxInstanceFailingTooLarge));
+  }
+
+  public void testNumberExclusiveMinMaxSuccessful() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberExclusiveMinMaxSchemaString);
+    assertTrue(matcher.matches(numberExclusiveMinMaxSuccessful));
+  }
+
+  public void testNumberExclusiveMinMaxFailingTooSmall() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberExclusiveMinMaxSchemaString);
+    assertFalse(matcher.matches(numberExclusiveMinMaxFailingTooSmall));
+  }
+
+  public void testNumberExclusiveMinMaxFailingTooLarge() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberExclusiveMinMaxSchemaString);
+    assertFalse(matcher.matches(numberExclusiveMinMaxFailingTooLarge));
+  }
 }
