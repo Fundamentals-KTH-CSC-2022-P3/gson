@@ -1,11 +1,12 @@
 package com.google.gson;
 
 import junit.framework.TestCase;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class JsonSchemaValidatorTest extends TestCase {
+public class JsonSchemaValidatorTest {
 
     @Test
     public void testValidate() throws JsonSchemaValidator.SchemaValidationException {
@@ -73,8 +74,8 @@ public class JsonSchemaValidatorTest extends TestCase {
         } catch (Exception ex) {
             exception = ex;
         }
-        assertNotNull(exception);
-        assertEquals(JsonSchemaValidator.SchemaValidationException.class, exception.getClass());
+        Assert.assertNotNull(exception);
+        Assert.assertEquals(JsonSchemaValidator.SchemaValidationException.class, exception.getClass());
     }
 
     @Test
@@ -98,6 +99,7 @@ public class JsonSchemaValidatorTest extends TestCase {
     }
 
 
+    @Test
     public void testValidateObject() throws JsonSchemaValidator.SchemaValidationException {
         JsonElement root = JsonParser.parseString(
                 "{\n" +
@@ -119,5 +121,20 @@ public class JsonSchemaValidatorTest extends TestCase {
 
     @Test
     public void validateTypeField() {
+    }
+
+    @Test
+    public void testValidateArray() throws JsonSchemaValidator.SchemaValidationException {
+        JsonElement root = JsonParser.parseString(
+                "{\n" +
+                        "      \"description\": \"Tags for the product\",\n" +
+                        "      \"type\": \"array\",\n" +
+                        "      \"items\": {\n" +
+                        "        \"type\": \"string\"\n" +
+                        "      },\n" +
+                        "      \"minItems\": 1,\n" +
+                        "      \"uniqueItems\": true\n" +
+                        "}");
+        JsonSchemaValidator.validateArray(root.getAsJsonObject());
     }
 }
