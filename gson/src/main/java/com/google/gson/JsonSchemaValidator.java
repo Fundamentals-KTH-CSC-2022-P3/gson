@@ -100,6 +100,42 @@ public abstract class JsonSchemaValidator {
     }
 
     static void validateArray(JsonObject schemaNode) throws SchemaValidationException {
+        if (schemaNode.has("items")){
+            validateSchemaNode(schemaNode.getAsJsonObject("items"));
+        }
+        if (schemaNode.has("contains")){
+            validateSchemaNode(schemaNode.getAsJsonObject("contains"));
+        }
+        if ((!schemaNode.has("items") || schemaNode.getAsJsonObject("items").keySet().isEmpty()) &&
+                !schemaNode.has("contains")){
+            throw new SchemaValidationException("Empty \"items\" object requires \"contains\" keyword");
+        }
+
+        if (schemaNode.has("prefixItems")){
+            JsonArray prefixItemsArray = schemaNode.getAsJsonArray("prefixItems");
+            if (prefixItemsArray.isEmpty()){
+                throw new SchemaValidationException("PrefixItems may not be empty");
+            }
+            for (JsonElement el : prefixItemsArray){
+                validateSchemaNode(el.getAsJsonObject());
+            }
+        }
+
+        if (schemaNode.has("minItems")){
+            try {
+                schemaNode.getAsJsonPrimitive("minItems").getAsInt();
+            } catch (Throwable throwable){
+                throw new SchemaValidationException("minItems must be an integer", throwable);
+            }
+        }
+
+        if (schemaNode.has("uniqueItems")){
+            try {
+                schemaNode.getAsJsonPrimitive("uniqueItems").getAsBoolean();
+            } catch (Throwable throwable){
+                throw new SchemaValidationException("uniqueItems must be a boolean", throwable);
+            }
+        }
 
     }
 
