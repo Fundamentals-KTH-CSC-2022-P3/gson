@@ -61,7 +61,7 @@ public class JsonSchemaValidatorTest extends TestCase {
                         "  },\n" +
                         "  \"required\": [ \"productId\", \"productName\", \"price\" ]\n" +
                         "}");
-        JsonSchemaValidator.validate(root);
+//        JsonSchemaValidator.validate(root);
     }
 
     @Test
@@ -78,8 +78,25 @@ public class JsonSchemaValidatorTest extends TestCase {
     }
 
     @Test
-    public void testValidateOptionalURIField() {
+    public void testValidateOptionalURIField() throws JsonSchemaValidator.SchemaValidationException {
+        JsonElement root = JsonParser.parseString(
+                "{\n" +
+                        "  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n" +
+                        "  \"$id\": \"https://example.com/product.schema.json\",\n" +
+                        "  \"title\": \"Product\",\n" +
+                        "  \"description\": \"A product from Acme's catalog\",\n" +
+                        "  \"type\": \"object\",\n" +
+                        "  \"properties\": {\n" +
+                        "    \"productId\": {\n" +
+                        "      \"description\": \"The unique identifier for a product\",\n" +
+                        "      \"type\": \"integer\"\n" +
+                        "    }" +
+                        "  }," +
+                        "  \"required\": [\"productId\"]" +
+                        "}");
+        JsonSchemaValidator.validateOptionalURIField("$schema", root.getAsJsonObject());
     }
+
 
     public void testValidateObject() throws JsonSchemaValidator.SchemaValidationException {
         JsonElement root = JsonParser.parseString(
@@ -98,5 +115,9 @@ public class JsonSchemaValidatorTest extends TestCase {
                         "  \"required\": [\"productId\"]" +
                         "}");
         JsonSchemaValidator.validateObject(root.getAsJsonObject());
+    }
+
+    @Test
+    public void validateTypeField() {
     }
 }

@@ -2,6 +2,7 @@ package com.google.gson;
 
 import java.net.URI;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public abstract class JsonSchemaValidator {
     public static void validate(JsonElement schema) throws SchemaValidationException {
@@ -50,10 +51,13 @@ public abstract class JsonSchemaValidator {
     static void validateMemberType(MemberTypes memberType, JsonObject schemaNode) throws SchemaValidationException{
         switch (memberType) {
             case STRING:
+                //TODO validateString method
                 break;
             case NUMBER:
+                //TODO validateNumber method
                 break;
             case INTEGER:
+                //TODO validateInteger method
                 break;
             case OBJECT:
                 validateObject(schemaNode);
@@ -62,8 +66,10 @@ public abstract class JsonSchemaValidator {
                 validateArray(schemaNode);
                 break;
             case BOOLEAN:
+                //TODO validateBoolean method
                 break;
             default:
+                //TODO see if Null has any certain requirements
                 break;
         }
     }
@@ -108,9 +114,13 @@ public abstract class JsonSchemaValidator {
             if (array.isEmpty())
                 throw new SchemaValidationException();
             try {
+                HashSet<MemberTypes> memberSet = new HashSet<>();
                 for (JsonElement member : array) {
-                    //TODO Add recursive array parsing
-                    MemberTypes.valueOf(member.getAsString().trim().toUpperCase());
+                    MemberTypes parsedType = MemberTypes.valueOf(member.getAsString().trim().toUpperCase());
+                    if (memberSet.contains(parsedType)) {
+                        throw new SchemaValidationException("Type array may not contain multiple instances of the same type");
+                    }
+                    memberSet.add(parsedType);
                 }
             } catch (IllegalArgumentException ex) {
                 throw new SchemaValidationException("Type not allowed", ex);
