@@ -1,19 +1,14 @@
 package com.google.gson;
 
 import java.net.URI;
+import java.util.HashMap;
 
-public class JsonSchemaValidator {
+public abstract class JsonSchemaValidator {
     public static void validate(JsonElement schema) throws SchemaValidationException {
-        validateRootObject(schema);
-    }
-
-    static void validateRootObject(JsonElement schema) throws SchemaValidationException {
         if (validateSchemaRootType(schema)) return;
         JsonObject schemaRoot = schema.getAsJsonObject();
-
-        validateTypeFieldAsObject(schemaRoot);
-        validateOptionalURIField("$schema", schemaRoot);
-        validateOptionalURIField("$id", schemaRoot);
+        verifyTypeField(schemaRoot, MemberTypes.OBJECT);
+        validateSchemaNode(schema);
     }
 
     static boolean validateSchemaRootType(JsonElement schema) {
@@ -24,6 +19,32 @@ public class JsonSchemaValidator {
             return true;
         }
         return false;
+    }
+
+    static void validateSchemaNode(JsonElement schemaNode) throws SchemaValidationException {
+        if(!schemaNode.isJsonObject()) {
+            throw new SchemaValidationException("Schema node is not a JSON Object");
+        }
+
+        JsonObject object = schemaNode.getAsJsonObject();
+        validateOptionalURIField("$schema", object);
+        validateOptionalURIField("$id", object);
+        validateTypeField(object);
+
+        JsonElement types = object.get("type");
+        if (types.isJsonArray()) {
+            JsonArray list = types.getAsJsonArray();
+            if (list.isEmpty()) {
+                throw new SchemaValidationException("Type not allowed to be an empty array");
+            }
+            for (JsonElement type : types.getAsJsonArray()) {
+                String cleanedType = type.getAsString().trim().toUpperCase();
+                validateMemberType(MemberTypes.valueOf(cleanedType), object);
+            }
+            return;
+        }
+        String cleanedType = types.getAsString().trim().toUpperCase();
+        validateMemberType(MemberTypes.valueOf(cleanedType), object);
     }
 
     static void validateMemberType(MemberTypes memberType, JsonObject schemaNode) throws SchemaValidationException{
@@ -42,7 +63,7 @@ public class JsonSchemaValidator {
                 break;
             case BOOLEAN:
                 break;
-            case NULL:
+            default:
                 break;
         }
     }
@@ -50,15 +71,23 @@ public class JsonSchemaValidator {
     static void validateObject(JsonObject schemaNode) throws SchemaValidationException {
         try {
             JsonObject childNode = schemaNode.getAsJsonObject("properties");
-
-            if(schemaNode.has("required")) {
-                //TODO: Verify that the array contains only keys from properties
-            }
+            HashMap<String, String> propertyFields = new HashMap<>();
             for (String key : childNode.keySet()) {
                 if(validateSchemaRootType(childNode.get(key)))
                     continue;
-                validateRootObject(childNode.get(key));
+                validateSchemaNode(childNode.get(key));
+                propertyFields.put(key, key);
             }
+            if(schemaNode.has("required")) {
+                JsonArray requiredFields = schemaNode.getAsJsonArray("required");
+                for (JsonElement element : requiredFields) {
+                    assert(propertyFields.containsKey(element.getAsString()));
+                }
+            }
+        } catch (SchemaValidationException ex) {
+            throw ex;
+        } catch (AssertionError ex) {
+            throw new SchemaValidationException("Required properties not present in schema");
         } catch (Throwable ex) {
             throw new SchemaValidationException(ex);
         }
@@ -70,6 +99,9 @@ public class JsonSchemaValidator {
 
     static void validateTypeField(JsonObject schema) throws SchemaValidationException {
         JsonElement type = schema.get("type");
+        if (type == null){
+            throw new SchemaValidationException("Type not defined");
+        }
         boolean isArray = type.isJsonArray();
         if (isArray){
             JsonArray array = type.getAsJsonArray();
@@ -77,23 +109,24 @@ public class JsonSchemaValidator {
                 throw new SchemaValidationException();
             try {
                 for (JsonElement member : array) {
+                    //TODO Add recursive array parsing
                     MemberTypes.valueOf(member.getAsString().trim().toUpperCase());
                 }
             } catch (IllegalArgumentException ex) {
-                throw new SchemaValidationException(ex);
+                throw new SchemaValidationException("Type not allowed", ex);
             }
             return;
         }
         try {
             MemberTypes.valueOf(type.getAsString().trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
-            throw new SchemaValidationException(ex);
+            throw new SchemaValidationException("Type not allowed", ex);
         }
     }
 
-    static void validateTypeFieldAsObject(JsonObject schema) throws SchemaValidationException {
-        JsonElement type = schema.get("type");
-        MemberTypes memberType = MemberTypes.NULL;
+    static void verifyTypeField(JsonObject schemaNode, MemberTypes requiredType) throws SchemaValidationException {
+        JsonElement type = schemaNode.get("type");
+        MemberTypes memberType;
         try {
             String objectType = type.getAsString().trim().toUpperCase();
             memberType = MemberTypes.valueOf(objectType);
@@ -101,7 +134,7 @@ public class JsonSchemaValidator {
             throw new SchemaValidationException(ex);
         }
 
-        if (memberType != MemberTypes.OBJECT) {
+        if (memberType != requiredType) {
             throw new SchemaValidationException();
         }
     }
@@ -112,7 +145,7 @@ public class JsonSchemaValidator {
             try{
                 URI.create(schema.getAsString());
             } catch (IllegalArgumentException e){
-                throw new SchemaValidationException(e);
+                throw new SchemaValidationException(memberName + " is not a valid URI", e);
             }
         }
     }
@@ -130,6 +163,12 @@ public class JsonSchemaValidator {
     static class SchemaValidationException extends Exception{
         public SchemaValidationException(){
             super();
+        }
+        public SchemaValidationException(String message) {
+            super(message);
+        }
+        public SchemaValidationException(String message, Throwable throwable) {
+            super(message, throwable);
         }
         public SchemaValidationException(Throwable ex){
             super(ex);
