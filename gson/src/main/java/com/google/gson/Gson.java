@@ -1069,6 +1069,7 @@ public final class Gson {
 
   /**
    * Checks whether the provided JSON instance matches the schema currently associated with this Gson object.
+   *
    * @param instance a JSON element to be matched against the schema
    * @return true if the instance matches the schema
    */
