@@ -11,6 +11,9 @@ import java.util.Set;
  */
 public class JsonSchemaMatcher {
 
+  // The "true" schema matches any valid JSON
+  static final JsonSchemaMatcher ALLOW_EVERYTHING = new JsonSchemaMatcher("true");
+
   // The root of the schema file can be either a JSON object or a Boolean.
   private final JsonElement schemaRoot;
 
@@ -94,6 +97,30 @@ public class JsonSchemaMatcher {
     return false;
   }
 
+  /**
+   * Checks that the JSON instance (or sub-instance) has one of the values defined by the enum property in the schema (or sub-schema).
+   *
+   * @param instance the JSON instance (or sub-instance).
+   * @param schema   the schema (or sub-schema).
+   * @return
+   */
+  private boolean matchingEnum(JsonElement instance, JsonObject schema) {
+    // If the sub-schema does not have an "enum" property then we will skip this check.
+    if (!schema.has("enum"))
+      return true;
+
+    // The value of the enum property must be an array.
+    JsonArray enumValues = schema.getAsJsonArray("enum");
+
+    // Check if the instance is equal to any of the enum values.
+    for (JsonElement enumValue : enumValues)
+      if (instance.equals(enumValue))
+        return true;
+
+    // If the instance is not equal to any of the enum values, then return false.
+    return false;
+  }
+
 
   /**
    * Matches an instance (or sub-instance) object against a schema (or sub-schema).
@@ -146,8 +173,8 @@ public class JsonSchemaMatcher {
     if (schema.has("minItems") && instanceArray.size() < schema.get("minItems").getAsInt())
       return false;
 
-    // Check if the sub-schema has the "uniqueItems" property, if so, all elements in the array must be unique.
-    if (schema.has("uniqueItems")) {
+    // Check if the sub-schema has the "uniqueItems" property and if it is true, if so, all elements in the array must be unique.
+    if (schema.has("uniqueItems") && schema.get("uniqueItems").getAsBoolean()) {
       Set<JsonElement> found = new HashSet<>();
 
       for (JsonElement element : instanceArray) {
@@ -282,8 +309,12 @@ public class JsonSchemaMatcher {
     // If the sub-schema is not a boolean it must be an object.
     JsonObject schemaObject = schema.getAsJsonObject();
 
-    // Check that the instance has the correct type as defined by the sub-schema.
+    // Check that the instance has the correct type if the type property is defined in the sub-schema.
     if (!matchingTypes(instance, schemaObject))
+      return false;
+
+    // Check that the instance has one of the enum values if the enum property is defined in the sub-schema.
+    if (!matchingEnum(instance, schemaObject))
       return false;
 
     // Depending on the type of the instance we should perform the matching algorithm differently.

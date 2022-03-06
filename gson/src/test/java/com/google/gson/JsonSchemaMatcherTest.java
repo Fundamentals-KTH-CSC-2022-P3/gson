@@ -41,6 +41,24 @@ public class JsonSchemaMatcherTest extends TestCase {
 
   private String exclusiveNumberSchema;
 
+  private String enumSchemaString = "{\n" +
+          "    \"enum\": [\"hello\", 23, true]\n" +
+          "}";
+
+  private String enumInstanceSuccessful = "\"hello\"";
+
+  private String enumInstanceSuccessful2 = "23";
+
+  private String enumInstanceSuccessful3 = "true";
+
+  private String enumInstanceFailing = "\"bye\"";
+
+  private String enumInstanceFailing2 = "24";
+
+  private String enumInstanceFailing3 = "false";
+
+  private String enumInstanceFailing4 = "null";
+
   /**
    * The following setup function prepares this schema:
    *   {"type":"object","properties":{"obj2":{"type":"object","properties":{"nested":{"type":"object","properties":{"veryNested1":{"type":"object"},"veryNested2":{"type":"object"}},"required":["veryNested2"]}},"required":["nested"]},"obj1":{"type":"object","properties":{"nested":{"type":"object"}}}},"required":["obj2"]}
@@ -272,6 +290,41 @@ public class JsonSchemaMatcherTest extends TestCase {
     JsonElement instanceJsonElement = JsonParser.parseString("{}");
     JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaJsonElement);
     assertTrue(matcher.matches(instanceJsonElement));
+  }
+
+  public void testEnumSchemaSuccessful() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
+    assertTrue(matcher.matches(enumInstanceSuccessful));
+  }
+
+  public void testEnumSchemaSuccessful2() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
+    assertTrue(matcher.matches(enumInstanceSuccessful2));
+  }
+
+  public void testEnumSchemaSuccessful3() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
+    assertTrue(matcher.matches(enumInstanceSuccessful3));
+  }
+
+  public void testEnumSchemaFailing() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
+    assertFalse(matcher.matches(enumInstanceFailing));
+  }
+
+  public void testEnumSchemaFailing2() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
+    assertFalse(matcher.matches(enumInstanceFailing2));
+  }
+
+  public void testEnumSchemaFailing3() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
+    assertFalse(matcher.matches(enumInstanceFailing3));
+  }
+
+  public void testEnumSchemaFailing4() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
+    assertFalse(matcher.matches(enumInstanceFailing4));
   }
 }
 
