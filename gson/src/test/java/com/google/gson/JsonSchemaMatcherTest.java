@@ -18,93 +18,22 @@ package com.google.gson;
 
 import com.google.gson.stream.JsonReader;
 import junit.framework.TestCase;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+@RunWith(JUnit4.class)
 public class JsonSchemaMatcherTest extends TestCase {
 
-  private String nestedObjectSchemaString = "{\n" +
-          "    \"type\": \"object\",\n" +
-          "    \"properties\": {\n" +
-          "        \"obj1\": {\n" +
-          "            \"type\": \"object\",\n" +
-          "            \"properties\": {\n" +
-          "                \"nested\": {\n" +
-          "                    \"type\": \"object\"\n" +
-          "                }\n" +
-          "            }\n" +
-          "        },\n" +
-          "        \"obj2\": {\n" +
-          "            \"type\": \"object\",\n" +
-          "            \"properties\": {\n" +
-          "                \"nested\": {\n" +
-          "                    \"type\": \"object\",\n" +
-          "                    \"properties\": {\n" +
-          "                        \"veryNested1\": {\n" +
-          "                            \"type\": \"object\"\n" +
-          "                        },\n" +
-          "                        \"veryNested2\": {\n" +
-          "                            \"type\": \"object\"\n" +
-          "                        }\n" +
-          "                    },\n" +
-          "                    \"required\": [\n" +
-          "                        \"veryNested2\"\n" +
-          "                    ]\n" +
-          "                }\n" +
-          "            },\n" +
-          "            \"required\": [\n" +
-          "                \"nested\"\n" +
-          "            ]\n" +
-          "        }\n" +
-          "    },\n" +
-          "    \"required\": [\n" +
-          "        \"obj2\"\n" +
-          "    ]\n" +
-          "}";
-
-  private String nestedObjectInstanceSuccessfulString = "{\n" +
-          "    \"obj1\": {},\n" +
-          "    \"obj2\": {\n" +
-          "        \"nested\": {\n" +
-          "            \"veryNested1\": {},\n" +
-          "            \"veryNested2\": {}\n" +
-          "        }\n" +
-          "    }\n" +
-          "}";
-
-  private String nestedObjectInstanceSuccessfulString2 = "{\n" +
-          "    \"obj2\": {\n" +
-          "        \"nested\": {\n" +
-          "            \"veryNested2\": {}\n" +
-          "        }\n" +
-          "    }\n" +
-          "}";
-
-  // "obj1" has the wrong type of property "nested" it should be an object but is an integer.
-  private String nestedObjectInstanceFailingString = "{\n" +
-          "    \"obj1\": {\n" +
-          "        \"nested\": 2\n" +
-          "    },\n" +
-          "    \"obj2\": {\n" +
-          "        \"nested\": {\n" +
-          "            \"veryNested1\": {},\n" +
-          "            \"veryNested2\": {}\n" +
-          "        }\n" +
-          "    }\n" +
-          "}";
-
-  // "obj2" does not contain the required property "veryNested2".
-  private String nestedObjectInstanceFailingString2 = "{\n" +
-          "    \"obj1\": {},\n" +
-          "    \"obj2\": {\n" +
-          "        \"nested\": {\n" +
-          "            \"veryNested1\": {}\n" +
-          "        }\n" +
-          "    }\n" +
-          "}";
+  private String schema1;
 
   private String arraySchemaString = "{\n" +
           "    \"type\": \"array\",\n" +
@@ -157,41 +86,115 @@ public class JsonSchemaMatcherTest extends TestCase {
 
   private String numberExclusiveMinMaxFailingTooLarge = "3";
 
-  public void testNestedObjectSuccessful() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString);
-    assertTrue(matcher.matches(nestedObjectInstanceSuccessfulString));
+  /**
+   * The following setup function prepares this schema:
+   *   {"type":"object","properties":{"obj2":{"type":"object","properties":{"nested":{"type":"object","properties":{"veryNested1":{"type":"object"},"veryNested2":{"type":"object"}},"required":["veryNested2"]}},"required":["nested"]},"obj1":{"type":"object","properties":{"nested":{"type":"object"}}}},"required":["obj2"]}
+   */
+  @Before
+  public void createSchemaOne() {
+    JsonSchemaObject schema = new JsonSchemaObject();
+    schema.addProperty(
+            "obj1",
+            new JsonSchemaObject().addProperty("nested", new JsonSchemaObject())
+    );
+    schema.addRequiredProperty(
+            "obj2",
+            new JsonSchemaObject().addRequiredProperty(
+                    "nested",
+                    new JsonSchemaObject().addProperty(
+                            "veryNested1",
+                            new JsonSchemaObject()
+                    ).addRequiredProperty(
+                            "veryNested2",
+                            new JsonSchemaObject()
+                    )
+            )
+    );
+    schema1 = schema.toJsonElement().toString();
   }
 
-  public void testNestedObjectSuccessful2() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString);
-    assertTrue(matcher.matches(nestedObjectInstanceSuccessfulString2));
+  @Test
+  public void testMatcherCanSuccessfullyValidateAPassingSchema() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(schema1);
+
+    String jsonToValidate = "{\n" +
+            "    \"obj1\": {},\n" +
+            "    \"obj2\": {\n" +
+            "        \"nested\": {\n" +
+            "            \"veryNested1\": {},\n" +
+            "            \"veryNested2\": {}\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+
+    assertTrue(matcher.matches(jsonToValidate));
   }
 
-  public void testNestedObjectFailing() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString);
-    assertFalse(matcher.matches(nestedObjectInstanceFailingString));
+  @Test
+  public void testMatcherCanValidateSchemaWithoutTypes() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(schema1);
+
+    String jsonToValidate = "{\n" +
+            "    \"obj2\": {\n" +
+            "        \"nested\": {\n" +
+            "            \"veryNested2\": {}\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+
+    assertTrue(matcher.matches(jsonToValidate));
   }
 
-  public void testNestedObjectFailing2() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString);
-    assertFalse(matcher.matches(nestedObjectInstanceFailingString2));
+  @Test
+  public void testMatcherReturnsFalseIfProvidedStringDoesNotMatchSchema() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(schema1);
+
+    // "obj1" has the wrong type of property "nested" it should be an object but is an integer.
+    String json1 = "{\n" +
+            "    \"obj1\": {\n" +
+            "        \"nested\": 2\n" +
+            "    },\n" +
+            "    \"obj2\": {\n" +
+            "        \"nested\": {\n" +
+            "            \"veryNested1\": {},\n" +
+            "            \"veryNested2\": {}\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+
+    // "obj2" does not contain the required property "veryNested2".
+    String json2 = "{\n" +
+            "    \"obj1\": {},\n" +
+            "    \"obj2\": {\n" +
+            "        \"nested\": {\n" +
+            "            \"veryNested1\": {}\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+
+    assertFalse(matcher.matches(json1));
+    assertFalse(matcher.matches(json2));
   }
 
+  @Test
   public void testArraySuccessful() {
     JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString);
     assertTrue(matcher.matches(arrayInstanceSuccessfulString));
   }
 
+  @Test
   public void testArrayUniqueFailing() {
     JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString);
     assertFalse(matcher.matches(arrayInstanceUniqueFailing));
   }
 
+  @Test
   public void testArrayMinItemsFailing() {
     JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString);
     assertFalse(matcher.matches(arrayInstanceMinItemsFailing));
   }
 
+  @Test
   public void testNumberMinMaxSuccessful() {
     JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberMaxMinSchemaString);
     assertTrue(matcher.matches(numberMinMaxInstanceSuccessful));
@@ -199,31 +202,37 @@ public class JsonSchemaMatcherTest extends TestCase {
     assertTrue(matcher.matches(numberMinMaxInstanceSuccessful3));
   }
 
+  @Test
   public void testNumberMinMaxFailingTooSmall() {
     JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberMaxMinSchemaString);
     assertFalse(matcher.matches(numberMinMaxInstanceFailingTooSmall));
   }
 
+  @Test
   public void testNumberMinMaxFailingTooLarge() {
     JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberMaxMinSchemaString);
     assertFalse(matcher.matches(numberMinMaxInstanceFailingTooLarge));
   }
 
+  @Test
   public void testNumberExclusiveMinMaxSuccessful() {
     JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberExclusiveMinMaxSchemaString);
     assertTrue(matcher.matches(numberExclusiveMinMaxSuccessful));
   }
 
+  @Test
   public void testNumberExclusiveMinMaxFailingTooSmall() {
     JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberExclusiveMinMaxSchemaString);
     assertFalse(matcher.matches(numberExclusiveMinMaxFailingTooSmall));
   }
 
+  @Test
   public void testNumberExclusiveMinMaxFailingTooLarge() {
     JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberExclusiveMinMaxSchemaString);
     assertFalse(matcher.matches(numberExclusiveMinMaxFailingTooLarge));
   }
 
+  @Test
   public void testReaderAPI() {
     Reader schemaReader = new StringReader("true");
     Reader instanceReader = new StringReader("{}");
@@ -231,6 +240,7 @@ public class JsonSchemaMatcherTest extends TestCase {
     assertTrue(matcher.matches(instanceReader));
   }
 
+  @Test
   public void testJsonReaderAPI() {
     JsonReader schemaJsonReader = new JsonReader(new StringReader("true"));
     JsonReader instanceJsonReader = new JsonReader(new StringReader("{}"));
@@ -238,6 +248,7 @@ public class JsonSchemaMatcherTest extends TestCase {
     assertTrue(matcher.matches(instanceJsonReader));
   }
 
+  @Test
   public void testStringAPI() {
     String schemaString = "true";
     String instanceString = "{}";
@@ -245,10 +256,56 @@ public class JsonSchemaMatcherTest extends TestCase {
     assertTrue(matcher.matches(instanceString));
   }
 
+  @Test
   public void testJsonElementAPI() {
     JsonElement schemaJsonElement = JsonParser.parseString("true");
     JsonElement instanceJsonElement = JsonParser.parseString("{}");
     JsonSchemaMatcher matcher = new JsonSchemaMatcher(schemaJsonElement);
     assertTrue(matcher.matches(instanceJsonElement));
+  }
+}
+
+abstract class JsonSchemaElement {
+
+  public abstract JsonElement toJsonElement();
+
+  public String toString() {
+    return toJsonElement().getAsString();
+  }
+}
+
+class JsonSchemaObject extends JsonSchemaElement {
+  Map<String, JsonSchemaElement> properties = new HashMap<>();
+  List<String> required = new ArrayList<>();
+
+  public JsonSchemaObject addProperty(String name, JsonSchemaElement element) {
+    properties.put(name, element);
+    return this;
+  }
+
+  public JsonSchemaObject addRequiredProperty(String name, JsonSchemaElement element) {
+    properties.put(name, element);
+    required.add(name);
+    return this;
+  }
+
+  public JsonElement toJsonElement() {
+    JsonObject el = new JsonObject();
+    JsonObject props = new JsonObject();
+    for (String key : properties.keySet()) {
+      props.add(key, properties.get(key).toJsonElement());
+    }
+    el.addProperty("type", "object");
+    if (props.size() != 0) {
+      el.add("properties", props);
+    }
+    if (!required.isEmpty()) {
+      JsonArray arr = new JsonArray();
+      for (String key : required) {
+        arr.add(key);
+      }
+      el.add("required", arr);
+    }
+    return el;
   }
 }
