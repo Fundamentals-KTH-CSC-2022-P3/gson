@@ -33,7 +33,7 @@ import java.util.Map;
 @RunWith(JUnit4.class)
 public class JsonSchemaMatcherTest extends TestCase {
 
-  private String schema1;
+  private String objectSchema;
 
   private String arraySchemaString = "{\n" +
           "    \"type\": \"array\",\n" +
@@ -91,7 +91,7 @@ public class JsonSchemaMatcherTest extends TestCase {
    *   {"type":"object","properties":{"obj2":{"type":"object","properties":{"nested":{"type":"object","properties":{"veryNested1":{"type":"object"},"veryNested2":{"type":"object"}},"required":["veryNested2"]}},"required":["nested"]},"obj1":{"type":"object","properties":{"nested":{"type":"object"}}}},"required":["obj2"]}
    */
   @Before
-  public void createSchemaOne() {
+  public void createObjectSchema() {
     JsonSchemaObject schema = new JsonSchemaObject();
     schema.addProperty(
             "obj1",
@@ -110,12 +110,12 @@ public class JsonSchemaMatcherTest extends TestCase {
                     )
             )
     );
-    schema1 = schema.toJsonElement().toString();
+    objectSchema = schema.toJsonElement().toString();
   }
 
   @Test
   public void testMatcherCanSuccessfullyValidateAPassingSchema() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(schema1);
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(objectSchema);
 
     String jsonToValidate = "{\n" +
             "    \"obj1\": {},\n" +
@@ -132,7 +132,7 @@ public class JsonSchemaMatcherTest extends TestCase {
 
   @Test
   public void testMatcherCanValidateSchemaWithoutTypes() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(schema1);
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(objectSchema);
 
     String jsonToValidate = "{\n" +
             "    \"obj2\": {\n" +
@@ -147,7 +147,7 @@ public class JsonSchemaMatcherTest extends TestCase {
 
   @Test
   public void testMatcherReturnsFalseIfProvidedStringDoesNotMatchSchema() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(schema1);
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(objectSchema);
 
     // "obj1" has the wrong type of property "nested" it should be an object but is an integer.
     String json1 = "{\n" +
