@@ -18,148 +18,30 @@ package com.google.gson;
 
 import com.google.gson.stream.JsonReader;
 import junit.framework.TestCase;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+@RunWith(JUnit4.class)
 public class JsonSchemaMatcherTest extends TestCase {
 
-  private String nestedObjectSchemaString = "{\n" +
-          "    \"type\": \"object\",\n" +
-          "    \"properties\": {\n" +
-          "        \"obj1\": {\n" +
-          "            \"type\": \"object\",\n" +
-          "            \"properties\": {\n" +
-          "                \"nested\": {\n" +
-          "                    \"type\": \"object\"\n" +
-          "                }\n" +
-          "            }\n" +
-          "        },\n" +
-          "        \"obj2\": {\n" +
-          "            \"type\": \"object\",\n" +
-          "            \"properties\": {\n" +
-          "                \"nested\": {\n" +
-          "                    \"type\": \"object\",\n" +
-          "                    \"properties\": {\n" +
-          "                        \"veryNested1\": {\n" +
-          "                            \"type\": \"object\"\n" +
-          "                        },\n" +
-          "                        \"veryNested2\": {\n" +
-          "                            \"type\": \"object\"\n" +
-          "                        }\n" +
-          "                    },\n" +
-          "                    \"required\": [\n" +
-          "                        \"veryNested2\"\n" +
-          "                    ]\n" +
-          "                }\n" +
-          "            },\n" +
-          "            \"required\": [\n" +
-          "                \"nested\"\n" +
-          "            ]\n" +
-          "        }\n" +
-          "    },\n" +
-          "    \"required\": [\n" +
-          "        \"obj2\"\n" +
-          "    ]\n" +
-          "}";
+  private String objectSchema;
 
-  private String nestedObjectInstanceSuccessfulString = "{\n" +
-          "    \"obj1\": {},\n" +
-          "    \"obj2\": {\n" +
-          "        \"nested\": {\n" +
-          "            \"veryNested1\": {},\n" +
-          "            \"veryNested2\": {}\n" +
-          "        }\n" +
-          "    }\n" +
-          "}";
+  private String arraySchema;
 
-  private String nestedObjectInstanceSuccessfulString2 = "{\n" +
-          "    \"obj2\": {\n" +
-          "        \"nested\": {\n" +
-          "            \"veryNested2\": {}\n" +
-          "        }\n" +
-          "    }\n" +
-          "}";
+  private String numberSchema;
 
-  // "obj1" has the wrong type of property "nested" it should be an object but is an integer.
-  private String nestedObjectInstanceFailingString = "{\n" +
-          "    \"obj1\": {\n" +
-          "        \"nested\": 2\n" +
-          "    },\n" +
-          "    \"obj2\": {\n" +
-          "        \"nested\": {\n" +
-          "            \"veryNested1\": {},\n" +
-          "            \"veryNested2\": {}\n" +
-          "        }\n" +
-          "    }\n" +
-          "}";
+  private String exclusiveNumberSchema;
 
-  // "obj2" does not contain the required property "veryNested2".
-  private String nestedObjectInstanceFailingString2 = "{\n" +
-          "    \"obj1\": {},\n" +
-          "    \"obj2\": {\n" +
-          "        \"nested\": {\n" +
-          "            \"veryNested1\": {}\n" +
-          "        }\n" +
-          "    }\n" +
-          "}";
-
-  private String arraySchemaString = "{\n" +
-          "    \"type\": \"array\",\n" +
-          "    \"items\": {\n" +
-          "        \"type\": \"object\"       \n" +
-          "    },\n" +
-          "    \"minItems\": 2,\n" +
-          "    \"uniqueItems\": true\n" +
-          "}";
-
-  private String arrayInstanceSuccessfulString = "[\n" +
-          "    {},\n" +
-          "    { \"obj\": {}}\n" +
-          "]";
-
-  private String arrayInstanceUniqueFailing = "[\n" +
-          "    {},\n" +
-          "    {}\n" +
-          "]";
-
-  private String arrayInstanceMinItemsFailing = "[\n" +
-          "    {}\n" +
-          "]";
-
-  private String numberMaxMinSchemaString = "{\n" +
-          "    \"type\": \"number\",\n" +
-          "    \"minimum\": 1,\n" +
-          "    \"maximum\": 3\n" +
-          "}";
-
-  private String numberMinMaxInstanceSuccessful = "1";
-
-  private String numberMinMaxInstanceSuccessful2 = "2";
-
-  private String numberMinMaxInstanceSuccessful3 = "3";
-
-  private String numberMinMaxInstanceFailingTooSmall = "0";
-
-  private String numberMinMaxInstanceFailingTooLarge = "4";
-
-  private String numberExclusiveMinMaxSchemaString = "{\n" +
-          "    \"type\": \"number\",\n" +
-          "    \"exclusiveMinimum\": 1,\n" +
-          "    \"exclusiveMaximum\": 3\n" +
-          "}";
-
-  private String numberExclusiveMinMaxSuccessful = "2";
-
-  private String numberExclusiveMinMaxFailingTooSmall = "1";
-
-  private String numberExclusiveMinMaxFailingTooLarge = "3";
-
-  private String enumSchemaString = "{\n" +
-          "    \"enum\": [\"hello\", 23, true]\n" +
-          "}";
+  private String enumSchema;
 
   private String enumInstanceSuccessful = "\"hello\"";
 
@@ -175,73 +57,221 @@ public class JsonSchemaMatcherTest extends TestCase {
 
   private String enumInstanceFailing4 = "null";
 
-  public void testNestedObjectSuccessful() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString);
-    assertTrue(matcher.matches(nestedObjectInstanceSuccessfulString));
+  /**
+   * The following setup function prepares this schema:
+   *   {"type":"object","properties":{"obj2":{"type":"object","properties":{"nested":{"type":"object","properties":{"veryNested1":{"type":"object"},"veryNested2":{"type":"object"}},"required":["veryNested2"]}},"required":["nested"]},"obj1":{"type":"object","properties":{"nested":{"type":"object"}}}},"required":["obj2"]}
+   */
+  @Before
+  public void createObjectSchema() {
+    JsonSchemaObject schema = new JsonSchemaObject();
+    schema.addProperty(
+            "obj1",
+            new JsonSchemaObject().addProperty("nested", new JsonSchemaObject())
+    );
+    schema.addRequiredProperty(
+            "obj2",
+            new JsonSchemaObject().addRequiredProperty(
+                    "nested",
+                    new JsonSchemaObject().addProperty(
+                            "veryNested1",
+                            new JsonSchemaObject()
+                    ).addRequiredProperty(
+                            "veryNested2",
+                            new JsonSchemaObject()
+                    )
+            )
+    );
+    objectSchema = schema.toJsonElement().toString();
   }
 
-  public void testNestedObjectSuccessful2() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString);
-    assertTrue(matcher.matches(nestedObjectInstanceSuccessfulString2));
+  /**
+   * The following setup function prepares this schema:
+   *    {"type":"array","items":{"type":"object"},"minItems":2,"uniqueItems":true}
+   */
+  @Before
+  public void createArraySchema() {
+    JsonSchemaArray schema = new JsonSchemaArray();
+    schema.setMinItems(2);
+    schema.setUniqueItems(true);
+    schema.setItemType("object");
+    arraySchema = schema.toJsonElement().toString();
   }
 
-  public void testNestedObjectFailing() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString);
-    assertFalse(matcher.matches(nestedObjectInstanceFailingString));
+  /**
+   * The following setup function prepares this schema:
+   *    {"type":"number","minimum":1,"maximum":3}
+   */
+  @Before
+  public void createNumberSchema() {
+    JsonSchemaNumber schema = new JsonSchemaNumber();
+    schema.setMinimum(1);
+    schema.setMaximum(3);
+    numberSchema = schema.toJsonElement().toString();
   }
 
-  public void testNestedObjectFailing2() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(nestedObjectSchemaString);
-    assertFalse(matcher.matches(nestedObjectInstanceFailingString2));
+  /**
+   * The following setup function prepares this schema:
+   *    {"type":"number","exclusiveMinimum":1,"exclusiveMaximum":3}
+   */
+  @Before
+  public void createExclusiveNumberSchema() {
+    JsonSchemaNumber schema = new JsonSchemaNumber();
+    schema.setExclusiveMinimum(1);
+    schema.setExclusiveMaximum(3);
+    exclusiveNumberSchema = schema.toJsonElement().toString();
   }
 
-  public void testArraySuccessful() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString);
-    assertTrue(matcher.matches(arrayInstanceSuccessfulString));
+  /**
+   * The following setup function prepares this schema:
+   *    {"enum": ["hello", 23, true]}
+   */
+  @Before
+  public void createEnumSchema() {
+    JsonSchemaEnum schema = new JsonSchemaEnum();
+    schema.addValue("hello");
+    schema.addValue(23);
+    schema.addValue(true);
+    enumSchema = schema.toJsonElement().toString();
   }
 
-  public void testArrayUniqueFailing() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString);
-    assertFalse(matcher.matches(arrayInstanceUniqueFailing));
+  @Test
+  public void testMatcherCanSuccessfullyValidateAPassingSchema() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(objectSchema);
+
+    String jsonToValidate = "{\n" +
+            "    \"obj1\": {},\n" +
+            "    \"obj2\": {\n" +
+            "        \"nested\": {\n" +
+            "            \"veryNested1\": {},\n" +
+            "            \"veryNested2\": {}\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+
+    assertTrue(matcher.matches(jsonToValidate));
   }
 
+  @Test
+  public void testMatcherCanValidateSchemaWithoutTypes() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(objectSchema);
+
+    String jsonToValidate = "{\n" +
+            "    \"obj2\": {\n" +
+            "        \"nested\": {\n" +
+            "            \"veryNested2\": {}\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+
+    assertTrue(matcher.matches(jsonToValidate));
+  }
+
+  @Test
+  public void testMatcherReturnsFalseIfProvidedStringDoesNotMatchSchema() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(objectSchema);
+
+    // "obj1" has the wrong type of property "nested" it should be an object but is an integer.
+    String json1 = "{\n" +
+            "    \"obj1\": {\n" +
+            "        \"nested\": 2\n" +
+            "    },\n" +
+            "    \"obj2\": {\n" +
+            "        \"nested\": {\n" +
+            "            \"veryNested1\": {},\n" +
+            "            \"veryNested2\": {}\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+
+    // "obj2" does not contain the required property "veryNested2".
+    String json2 = "{\n" +
+            "    \"obj1\": {},\n" +
+            "    \"obj2\": {\n" +
+            "        \"nested\": {\n" +
+            "            \"veryNested1\": {}\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+
+    assertFalse(matcher.matches(json1));
+    assertFalse(matcher.matches(json2));
+  }
+
+  @Test
+  public void testMatcherCanSuccessfullyMatchAValidArraySchema() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchema);
+
+    String json = "[\n" +
+            "    {},\n" +
+            "    { \"obj\": {}}\n" +
+            "]";
+
+    assertTrue(matcher.matches(json));
+  }
+
+  @Test
+  public void testJsonDoesNotPassIfNotItemsAreNotUniqueAndUniqueIsARequirement() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchema);
+
+    String json = "[\n" +
+            "    {},\n" +
+            "    {}\n" +
+            "]";
+
+    assertFalse(matcher.matches(json));
+  }
+
+  @Test
   public void testArrayMinItemsFailing() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString);
-    assertFalse(matcher.matches(arrayInstanceMinItemsFailing));
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchema);
+
+    // Not enough items
+    String json = "[\n" +
+            "    {}\n" +
+            "]";
+
+    assertFalse(matcher.matches(json));
   }
 
-  public void testNumberMinMaxSuccessful() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberMaxMinSchemaString);
-    assertTrue(matcher.matches(numberMinMaxInstanceSuccessful));
-    assertTrue(matcher.matches(numberMinMaxInstanceSuccessful2));
-    assertTrue(matcher.matches(numberMinMaxInstanceSuccessful3));
+  @Test
+  public void testNumberMinMax() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberSchema);
+    assertTrue(matcher.matches("1"));
+    assertTrue(matcher.matches("2"));
+    assertTrue(matcher.matches("3"));
   }
 
+  @Test
   public void testNumberMinMaxFailingTooSmall() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberMaxMinSchemaString);
-    assertFalse(matcher.matches(numberMinMaxInstanceFailingTooSmall));
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberSchema);
+    assertFalse(matcher.matches("0"));
   }
 
+  @Test
   public void testNumberMinMaxFailingTooLarge() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberMaxMinSchemaString);
-    assertFalse(matcher.matches(numberMinMaxInstanceFailingTooLarge));
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberSchema);
+    assertFalse(matcher.matches("4"));
   }
 
+  @Test
   public void testNumberExclusiveMinMaxSuccessful() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberExclusiveMinMaxSchemaString);
-    assertTrue(matcher.matches(numberExclusiveMinMaxSuccessful));
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(exclusiveNumberSchema);
+    assertTrue(matcher.matches("2"));
   }
 
+  @Test
   public void testNumberExclusiveMinMaxFailingTooSmall() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberExclusiveMinMaxSchemaString);
-    assertFalse(matcher.matches(numberExclusiveMinMaxFailingTooSmall));
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(exclusiveNumberSchema);
+    assertFalse(matcher.matches("1"));
   }
 
+  @Test
   public void testNumberExclusiveMinMaxFailingTooLarge() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberExclusiveMinMaxSchemaString);
-    assertFalse(matcher.matches(numberExclusiveMinMaxFailingTooLarge));
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(exclusiveNumberSchema);
+    assertFalse(matcher.matches("3"));
   }
 
+  @Test
   public void testReaderAPI() {
     Reader schemaReader = new StringReader("true");
     Reader instanceReader = new StringReader("{}");
@@ -249,6 +279,7 @@ public class JsonSchemaMatcherTest extends TestCase {
     assertTrue(matcher.matches(instanceReader));
   }
 
+  @Test
   public void testJsonReaderAPI() {
     JsonReader schemaJsonReader = new JsonReader(new StringReader("true"));
     JsonReader instanceJsonReader = new JsonReader(new StringReader("{}"));
@@ -256,6 +287,7 @@ public class JsonSchemaMatcherTest extends TestCase {
     assertTrue(matcher.matches(instanceJsonReader));
   }
 
+  @Test
   public void testStringAPI() {
     String schemaString = "true";
     String instanceString = "{}";
@@ -263,6 +295,7 @@ public class JsonSchemaMatcherTest extends TestCase {
     assertTrue(matcher.matches(instanceString));
   }
 
+  @Test
   public void testJsonElementAPI() {
     JsonElement schemaJsonElement = JsonParser.parseString("true");
     JsonElement instanceJsonElement = JsonParser.parseString("{}");
@@ -270,38 +303,169 @@ public class JsonSchemaMatcherTest extends TestCase {
     assertTrue(matcher.matches(instanceJsonElement));
   }
 
-  public void testEnumSchemaSuccessful() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
-    assertTrue(matcher.matches(enumInstanceSuccessful));
+  @Test
+  public void testMatcherCanSuccessfullyValidateStringsThatMatchEnumSchema() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchema);
+    assertTrue(matcher.matches("hello"));
+    assertTrue(matcher.matches("23"));
+    assertTrue(matcher.matches("true"));
   }
 
-  public void testEnumSchemaSuccessful2() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
-    assertTrue(matcher.matches(enumInstanceSuccessful2));
+  @Test
+  public void testMatcherCanSuccessfullyValidateStringsThatDoNotMatchEnumSchema() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchema);
+    assertFalse(matcher.matches("bye"));
+    assertFalse(matcher.matches("24"));
+    assertFalse(matcher.matches("false"));
+    assertFalse(matcher.matches("null"));
+  }
+}
+
+abstract class JsonSchemaElement {
+
+  public abstract JsonElement toJsonElement();
+
+  public String toString() {
+    return toJsonElement().getAsString();
+  }
+}
+
+class JsonSchemaObject extends JsonSchemaElement {
+  Map<String, JsonSchemaElement> properties = new HashMap<>();
+  List<String> required = new ArrayList<>();
+
+  public JsonSchemaObject addProperty(String name, JsonSchemaElement element) {
+    properties.put(name, element);
+    return this;
   }
 
-  public void testEnumSchemaSuccessful3() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
-    assertTrue(matcher.matches(enumInstanceSuccessful3));
+  public JsonSchemaObject addRequiredProperty(String name, JsonSchemaElement element) {
+    properties.put(name, element);
+    required.add(name);
+    return this;
   }
 
-  public void testEnumSchemaFailing() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
-    assertFalse(matcher.matches(enumInstanceFailing));
+  public JsonElement toJsonElement() {
+    JsonObject el = new JsonObject();
+    JsonObject props = new JsonObject();
+    for (String key : properties.keySet()) {
+      props.add(key, properties.get(key).toJsonElement());
+    }
+    el.addProperty("type", "object");
+    if (props.size() != 0) {
+      el.add("properties", props);
+    }
+    if (!required.isEmpty()) {
+      JsonArray arr = new JsonArray();
+      for (String key : required) {
+        arr.add(key);
+      }
+      el.add("required", arr);
+    }
+    return el;
+  }
+}
+
+class JsonSchemaArray extends JsonSchemaElement {
+  private String itemType;
+  private Integer minItems = null;
+  private Boolean uniqueItems = null;
+
+  public void setItemType(String itemType) {
+    this.itemType = itemType;
   }
 
-  public void testEnumSchemaFailing2() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
-    assertFalse(matcher.matches(enumInstanceFailing2));
+  public void setMinItems(Integer minItems) {
+    this.minItems = minItems;
   }
 
-  public void testEnumSchemaFailing3() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
-    assertFalse(matcher.matches(enumInstanceFailing3));
+  public void setUniqueItems(Boolean uniqueItems) {
+    this.uniqueItems = uniqueItems;
   }
 
-  public void testEnumSchemaFailing4() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
-    assertFalse(matcher.matches(enumInstanceFailing4));
+  public JsonElement toJsonElement() {
+    JsonObject el = new JsonObject();
+    el.addProperty("type", "array");
+
+    JsonObject items = new JsonObject();
+    items.addProperty("type", itemType);
+
+    el.add("items", items);
+
+    if (minItems != null) {
+      el.addProperty("minItems", minItems);
+    }
+    if (uniqueItems != null) {
+      el.addProperty("uniqueItems", uniqueItems);
+    }
+    return el;
+  }
+}
+
+class JsonSchemaNumber extends JsonSchemaElement {
+  private Integer minimum = null;
+  private Integer maximum = null;
+  private Integer exclusiveMinimum = null;
+  private Integer exclusiveMaximum = null;
+
+  public void setMinimum(Integer minimum) {
+    this.minimum = minimum;
+  }
+
+  public void setMaximum(Integer maximum) {
+    this.maximum = maximum;
+  }
+
+  public void setExclusiveMinimum(Integer exclusiveMinimum) {
+    this.exclusiveMinimum = exclusiveMinimum;
+  }
+
+  public void setExclusiveMaximum(Integer exclusiveMaximum) {
+    this.exclusiveMaximum = exclusiveMaximum;
+  }
+
+  public JsonElement toJsonElement() {
+    JsonObject el = new JsonObject();
+    el.addProperty("type", "number");
+
+    if (minimum != null) {
+      el.addProperty("minimum", minimum);
+    }
+    if (maximum != null) {
+      el.addProperty("maximum", maximum);
+    }
+    if (exclusiveMinimum != null) {
+      el.addProperty("exclusiveMinimum", exclusiveMinimum);
+    }
+    if (exclusiveMaximum != null) {
+      el.addProperty("exclusiveMaximum", exclusiveMaximum);
+    }
+    return el;
+  }
+}
+
+class JsonSchemaEnum extends JsonSchemaElement {
+  List<Object> allowed = new ArrayList<>();
+
+  public void addValue(Object val) {
+    allowed.add(val);
+  }
+
+  public JsonElement toJsonElement() {
+    JsonObject el = new JsonObject();
+
+    JsonArray arr = new JsonArray();
+    for (Object val : allowed) {
+      if (val instanceof Boolean) {
+        arr.add((Boolean) val);
+      } else if (val instanceof String) {
+        arr.add((String) val);
+      } else if (val instanceof Integer) {
+        arr.add((Integer) val);
+      }
+    }
+
+    el.add("enum", arr);
+    return el;
   }
 }
