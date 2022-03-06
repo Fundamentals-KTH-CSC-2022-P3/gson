@@ -3,6 +3,7 @@ package com.google.gson;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.function.Function;
 
 public abstract class JsonSchemaValidator {
     public static void validate(JsonElement schema) throws SchemaValidationException {
@@ -32,21 +33,8 @@ public abstract class JsonSchemaValidator {
         validateOptionalURIField("$id", object);
         validateTypeField(object);
 
-        if (object.has("title")){
-            try {
-                object.getAsJsonPrimitive("title").getAsString();
-            } catch (RuntimeException e) {
-                throw new SchemaValidationException("\"title\" must be a string", e);
-            }
-        }
-
-        if (object.has("description")){
-            try {
-                object.getAsJsonPrimitive("description").getAsString();
-            } catch (RuntimeException e) {
-                throw new SchemaValidationException("\"description\" must be a string", e);
-            }
-        }
+        verifyAndGetFieldOrDefault(object, "description", JsonElement::getAsString, "");
+        verifyAndGetFieldOrDefault(object, "title", JsonElement::getAsString, "");
 
         JsonElement types = object.get("type");
         if (types.isJsonArray()) {
@@ -85,64 +73,32 @@ public abstract class JsonSchemaValidator {
     }
 
     static void validateString(JsonObject schemaNode) throws SchemaValidationException {
-        if (schemaNode.has("maxLength")) {
-            try {
-                int value = schemaNode.getAsJsonPrimitive("maxLength").getAsInt();
-                if (value < 0){
-                    throw new IllegalArgumentException();
-                }
-            } catch (RuntimeException e) {
-                throw new SchemaValidationException("\"maxLength\" must be a non-negative integer", e);
-            }
+        int maxLength = verifyAndGetFieldOrDefault(schemaNode, "maxLength", JsonElement::getAsInt,  Integer.MAX_VALUE);
+        if (maxLength < 0){
+            throw new SchemaValidationException("\"maxLength\" must be greater than 0");
         }
-        if (schemaNode.has("minLength")) {
-            try {
-                int value = schemaNode.getAsJsonPrimitive("minLength").getAsInt();
-                if (value < 0){
-                    throw new IllegalArgumentException();
-                }
-            } catch (RuntimeException e) {
-                throw new SchemaValidationException("\"minLength\" must be a non-negative integer", e);
-            }
+        int minLength = verifyAndGetFieldOrDefault(schemaNode, "minLength", JsonElement::getAsInt,  Integer.MAX_VALUE);
+        if (minLength < 0){
+            throw new SchemaValidationException("\"minLength\" must be greater than 0");
         }
-        if (schemaNode.has("pattern")) {
-            try {
-                schemaNode.getAsJsonPrimitive("pattern").getAsString();
-            } catch (RuntimeException e) {
-                throw new SchemaValidationException("\"pattern\" must be a string", e);
-            }
-        }
+
+        verifyAndGetFieldOrDefault(schemaNode, "pattern", JsonElement::getAsString, "");
     }
 
     static void validateNumberAndInteger(JsonObject schemaNode) throws SchemaValidationException {
+        verifyAndGetFieldOrDefault(schemaNode, "exclusiveMinimum", JsonElement::getAsDouble,  0.0);
+        verifyAndGetFieldOrDefault(schemaNode, "exclusiveMaximum", JsonElement::getAsDouble,  0.0);
+        verifyAndGetFieldOrDefault(schemaNode, "minimum", JsonElement::getAsDouble,  0.0);
+        verifyAndGetFieldOrDefault(schemaNode, "maximum", JsonElement::getAsDouble,  0.0);
 
-        if (schemaNode.has("multipleOf")) {
-            try{
-                Number value = schemaNode.getAsJsonPrimitive("multipleOf").getAsNumber();
-                if (value.doubleValue() <= 0){
-                    throw new IllegalArgumentException("\"multipleOf\" must be strictly greater than 0");
-                }
-            } catch (IllegalArgumentException e){
-                throw new SchemaValidationException(e);
-            } catch (RuntimeException e){
-                throw new SchemaValidationException("\"multipleOf\" must be a number", e);
-            }
+        double multipleOf = verifyAndGetFieldOrDefault(schemaNode,
+                "multipleOf",
+                JsonElement::getAsDouble,
+                1.0);
+        if (multipleOf <= 0){
+            throw new SchemaValidationException("\"multipleOf\" must be strictly greater than 0");
         }
 
-        verifyFieldAsNumber(schemaNode, "exclusiveMinimum");
-        verifyFieldAsNumber(schemaNode, "exclusiveMaximum");
-        verifyFieldAsNumber(schemaNode, "minimum");
-        verifyFieldAsNumber(schemaNode, "maximum");
-    }
-
-    private static void verifyFieldAsNumber(JsonObject schemaNode, String key) throws SchemaValidationException {
-        if (schemaNode.has(key)) {
-            try{
-                schemaNode.getAsJsonPrimitive(key).getAsNumber();
-            } catch (RuntimeException e){
-                throw new SchemaValidationException("\"" + key + "\" must be a number", e);
-            }
-        }
     }
 
     static void validateObject(JsonObject schemaNode) throws SchemaValidationException {
@@ -192,13 +148,8 @@ public abstract class JsonSchemaValidator {
             }
         }
 
-        if (schemaNode.has("minItems")){
-            try {
-                schemaNode.getAsJsonPrimitive("minItems").getAsInt();
-            } catch (Throwable throwable){
-                throw new SchemaValidationException("\"minItems\" must be an integer", throwable);
-            }
-        }
+        verifyAndGetFieldOrDefault(schemaNode, "minItems", JsonElement::getAsInt,  0);
+        verifyAndGetFieldOrDefault(schemaNode, "uniqueItems", JsonElement::getAsBoolean, true);
 
         if (schemaNode.has("uniqueItems")){
             try {
@@ -254,6 +205,20 @@ public abstract class JsonSchemaValidator {
         if (memberType != requiredType) {
             throw new SchemaValidationException();
         }
+    }
+
+    private static <T> T verifyAndGetFieldOrDefault(JsonObject schemaNode,
+                                                    String key,
+                                                    Function<JsonElement, T> verificationFunction,
+                                                    T defaultValue) throws SchemaValidationException {
+        if (schemaNode.has(key)) {
+            try{
+                return verificationFunction.apply(schemaNode.getAsJsonPrimitive(key));
+            } catch (RuntimeException e){
+                throw new SchemaValidationException("\"" + key + "\" must be a " + defaultValue.getClass().getSimpleName(), e);
+            }
+        }
+        return defaultValue;
     }
 
     static void validateOptionalURIField(String memberName, JsonObject schemaRoot) throws SchemaValidationException {
