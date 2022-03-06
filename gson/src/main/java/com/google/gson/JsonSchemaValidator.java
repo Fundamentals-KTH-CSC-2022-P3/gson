@@ -6,6 +6,12 @@ import java.util.HashSet;
 import java.util.function.Function;
 
 public abstract class JsonSchemaValidator {
+    /**
+     * provides validation of an element as a valid JSON schema.
+     * @param schema the schema root
+     * @throws SchemaValidationException if the schema does not fulfill the requirements specified on
+     * https://datatracker.ietf.org/doc/html/draft-bhutton-json-schema-00
+     */
     public static void validate(JsonElement schema) throws SchemaValidationException {
         if (validateSchemaRootType(schema)) return;
         JsonObject schemaRoot = schema.getAsJsonObject();
@@ -13,11 +19,15 @@ public abstract class JsonSchemaValidator {
         validateSchemaNode(schema);
     }
 
-    static boolean validateSchemaRootType(JsonElement schema) {
+    static boolean validateSchemaRootType(JsonElement schema) throws SchemaValidationException {
         boolean isObject = schema.isJsonObject();
         if (!isObject){
             // if schema root is not an Object, it must be a boolean
-            schema.getAsBoolean();
+            try {
+                schema.getAsBoolean();
+            } catch (RuntimeException e){
+                throw new SchemaValidationException("Schema is not valid");
+            }
             return true;
         }
         return false;
