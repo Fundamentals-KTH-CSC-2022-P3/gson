@@ -116,6 +116,7 @@ public final class Gson {
   static final FieldNamingStrategy DEFAULT_FIELD_NAMING_STRATEGY = FieldNamingPolicy.IDENTITY;
   static final ToNumberStrategy DEFAULT_OBJECT_TO_NUMBER_STRATEGY = ToNumberPolicy.DOUBLE;
   static final ToNumberStrategy DEFAULT_NUMBER_TO_NUMBER_STRATEGY = ToNumberPolicy.LAZILY_PARSED_NUMBER;
+  static final JsonSchemaMatcher DEFAULT_JSON_SCHEMA_MATCHER = JsonSchemaMatcher.ALLOW_EVERYTHING;
 
   private static final TypeToken<?> NULL_KEY_SURROGATE = TypeToken.get(Object.class);
   private static final String JSON_NON_EXECUTABLE_PREFIX = ")]}'\n";
@@ -156,6 +157,7 @@ public final class Gson {
   final List<TypeAdapterFactory> builderHierarchyFactories;
   final ToNumberStrategy objectToNumberStrategy;
   final ToNumberStrategy numberToNumberStrategy;
+  final JsonSchemaMatcher schemaMatcher;
 
   /**
    * Constructs a Gson object with default configuration. The default configuration has the
@@ -199,7 +201,8 @@ public final class Gson {
         DEFAULT_USE_JDK_UNSAFE,
         LongSerializationPolicy.DEFAULT, DEFAULT_DATE_PATTERN, DateFormat.DEFAULT, DateFormat.DEFAULT,
         Collections.<TypeAdapterFactory>emptyList(), Collections.<TypeAdapterFactory>emptyList(),
-        Collections.<TypeAdapterFactory>emptyList(), DEFAULT_OBJECT_TO_NUMBER_STRATEGY, DEFAULT_NUMBER_TO_NUMBER_STRATEGY);
+        Collections.<TypeAdapterFactory>emptyList(), DEFAULT_OBJECT_TO_NUMBER_STRATEGY, DEFAULT_NUMBER_TO_NUMBER_STRATEGY,
+        DEFAULT_JSON_SCHEMA_MATCHER);
   }
 
   Gson(Excluder excluder, FieldNamingStrategy fieldNamingStrategy,
@@ -211,7 +214,8 @@ public final class Gson {
       int timeStyle, List<TypeAdapterFactory> builderFactories,
       List<TypeAdapterFactory> builderHierarchyFactories,
       List<TypeAdapterFactory> factoriesToBeAdded,
-      ToNumberStrategy objectToNumberStrategy, ToNumberStrategy numberToNumberStrategy) {
+      ToNumberStrategy objectToNumberStrategy, ToNumberStrategy numberToNumberStrategy,
+      JsonSchemaMatcher schemaMatcher) {
     this.excluder = excluder;
     this.fieldNamingStrategy = fieldNamingStrategy;
     this.instanceCreators = instanceCreators;
@@ -232,6 +236,7 @@ public final class Gson {
     this.builderHierarchyFactories = builderHierarchyFactories;
     this.objectToNumberStrategy = objectToNumberStrategy;
     this.numberToNumberStrategy = numberToNumberStrategy;
+    this.schemaMatcher = schemaMatcher;
 
     List<TypeAdapterFactory> factories = new ArrayList<TypeAdapterFactory>();
 
@@ -1060,6 +1065,15 @@ public final class Gson {
       return null;
     }
     return (T) fromJson(new JsonTreeReader(json), typeOfT);
+  }
+
+  /**
+   * Checks whether the provided JSON instance matches the schema currently associated with this Gson object.
+   * @param instance a JSON element to be matched against the schema
+   * @return true if the instance matches the schema
+   */
+  public boolean matchesSchema(JsonElement instance) {
+    return schemaMatcher.matches(instance);
   }
 
   static class FutureTypeAdapter<T> extends TypeAdapter<T> {
