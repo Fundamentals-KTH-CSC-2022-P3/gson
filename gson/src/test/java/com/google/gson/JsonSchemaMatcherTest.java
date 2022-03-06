@@ -35,56 +35,11 @@ public class JsonSchemaMatcherTest extends TestCase {
 
   private String objectSchema;
 
-  private String arraySchemaString = "{\n" +
-          "    \"type\": \"array\",\n" +
-          "    \"items\": {\n" +
-          "        \"type\": \"object\"       \n" +
-          "    },\n" +
-          "    \"minItems\": 2,\n" +
-          "    \"uniqueItems\": true\n" +
-          "}";
+  private String arraySchema;
 
-  private String arrayInstanceSuccessfulString = "[\n" +
-          "    {},\n" +
-          "    { \"obj\": {}}\n" +
-          "]";
+  private String numberSchema;
 
-  private String arrayInstanceUniqueFailing = "[\n" +
-          "    {},\n" +
-          "    {}\n" +
-          "]";
-
-  private String arrayInstanceMinItemsFailing = "[\n" +
-          "    {}\n" +
-          "]";
-
-  private String numberMaxMinSchemaString = "{\n" +
-          "    \"type\": \"number\",\n" +
-          "    \"minimum\": 1,\n" +
-          "    \"maximum\": 3\n" +
-          "}";
-
-  private String numberMinMaxInstanceSuccessful = "1";
-
-  private String numberMinMaxInstanceSuccessful2 = "2";
-
-  private String numberMinMaxInstanceSuccessful3 = "3";
-
-  private String numberMinMaxInstanceFailingTooSmall = "0";
-
-  private String numberMinMaxInstanceFailingTooLarge = "4";
-
-  private String numberExclusiveMinMaxSchemaString = "{\n" +
-          "    \"type\": \"number\",\n" +
-          "    \"exclusiveMinimum\": 1,\n" +
-          "    \"exclusiveMaximum\": 3\n" +
-          "}";
-
-  private String numberExclusiveMinMaxSuccessful = "2";
-
-  private String numberExclusiveMinMaxFailingTooSmall = "1";
-
-  private String numberExclusiveMinMaxFailingTooLarge = "3";
+  private String exclusiveNumberSchema;
 
   /**
    * The following setup function prepares this schema:
@@ -111,6 +66,43 @@ public class JsonSchemaMatcherTest extends TestCase {
             )
     );
     objectSchema = schema.toJsonElement().toString();
+  }
+
+  /**
+   * The following setup function prepares this schema:
+   *    {"type":"array","items":{"type":"object"},"minItems":2,"uniqueItems":true}
+   */
+  @Before
+  public void createArraySchema() {
+    JsonSchemaArray schema = new JsonSchemaArray();
+    schema.setMinItems(2);
+    schema.setUniqueItems(true);
+    schema.setItemType("object");
+    arraySchema = schema.toJsonElement().toString();
+  }
+
+  /**
+   * The following setup function prepares this schema:
+   *    {"type":"number","minimum":1,"maximum":3}
+   */
+  @Before
+  public void createNumberSchema() {
+    JsonSchemaNumber schema = new JsonSchemaNumber();
+    schema.setMinimum(1);
+    schema.setMaximum(3);
+    numberSchema = schema.toJsonElement().toString();
+  }
+
+  /**
+   * The following setup function prepares this schema:
+   *    {"type":"number","exclusiveMinimum":1,"exclusiveMaximum":3}
+   */
+  @Before
+  public void createExclusiveNumberSchema() {
+    JsonSchemaNumber schema = new JsonSchemaNumber();
+    schema.setExclusiveMinimum(1);
+    schema.setExclusiveMaximum(3);
+    exclusiveNumberSchema = schema.toJsonElement().toString();
   }
 
   @Test
@@ -177,59 +169,77 @@ public class JsonSchemaMatcherTest extends TestCase {
   }
 
   @Test
-  public void testArraySuccessful() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString);
-    assertTrue(matcher.matches(arrayInstanceSuccessfulString));
+  public void testMatcherCanSuccessfullyMatchAValidArraySchema() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchema);
+
+    String json = "[\n" +
+            "    {},\n" +
+            "    { \"obj\": {}}\n" +
+            "]";
+
+    assertTrue(matcher.matches(json));
   }
 
   @Test
-  public void testArrayUniqueFailing() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString);
-    assertFalse(matcher.matches(arrayInstanceUniqueFailing));
+  public void testJsonDoesNotPassIfNotItemsAreNotUniqueAndUniqueIsARequirement() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchema);
+
+    String json = "[\n" +
+            "    {},\n" +
+            "    {}\n" +
+            "]";
+
+    assertFalse(matcher.matches(json));
   }
 
   @Test
   public void testArrayMinItemsFailing() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchemaString);
-    assertFalse(matcher.matches(arrayInstanceMinItemsFailing));
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(arraySchema);
+
+    // Not enough items
+    String json = "[\n" +
+            "    {}\n" +
+            "]";
+
+    assertFalse(matcher.matches(json));
   }
 
   @Test
-  public void testNumberMinMaxSuccessful() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberMaxMinSchemaString);
-    assertTrue(matcher.matches(numberMinMaxInstanceSuccessful));
-    assertTrue(matcher.matches(numberMinMaxInstanceSuccessful2));
-    assertTrue(matcher.matches(numberMinMaxInstanceSuccessful3));
+  public void testNumberMinMax() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberSchema);
+    assertTrue(matcher.matches("1"));
+    assertTrue(matcher.matches("2"));
+    assertTrue(matcher.matches("3"));
   }
 
   @Test
   public void testNumberMinMaxFailingTooSmall() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberMaxMinSchemaString);
-    assertFalse(matcher.matches(numberMinMaxInstanceFailingTooSmall));
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberSchema);
+    assertFalse(matcher.matches("0"));
   }
 
   @Test
   public void testNumberMinMaxFailingTooLarge() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberMaxMinSchemaString);
-    assertFalse(matcher.matches(numberMinMaxInstanceFailingTooLarge));
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberSchema);
+    assertFalse(matcher.matches("4"));
   }
 
   @Test
   public void testNumberExclusiveMinMaxSuccessful() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberExclusiveMinMaxSchemaString);
-    assertTrue(matcher.matches(numberExclusiveMinMaxSuccessful));
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(exclusiveNumberSchema);
+    assertTrue(matcher.matches("2"));
   }
 
   @Test
   public void testNumberExclusiveMinMaxFailingTooSmall() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberExclusiveMinMaxSchemaString);
-    assertFalse(matcher.matches(numberExclusiveMinMaxFailingTooSmall));
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(exclusiveNumberSchema);
+    assertFalse(matcher.matches("1"));
   }
 
   @Test
   public void testNumberExclusiveMinMaxFailingTooLarge() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(numberExclusiveMinMaxSchemaString);
-    assertFalse(matcher.matches(numberExclusiveMinMaxFailingTooLarge));
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(exclusiveNumberSchema);
+    assertFalse(matcher.matches("3"));
   }
 
   @Test
@@ -305,6 +315,84 @@ class JsonSchemaObject extends JsonSchemaElement {
         arr.add(key);
       }
       el.add("required", arr);
+    }
+    return el;
+  }
+}
+
+class JsonSchemaArray extends JsonSchemaElement {
+  private String itemType;
+  private Integer minItems = null;
+  private Boolean uniqueItems = null;
+
+  public void setItemType(String itemType) {
+    this.itemType = itemType;
+  }
+
+  public void setMinItems(Integer minItems) {
+    this.minItems = minItems;
+  }
+
+  public void setUniqueItems(Boolean uniqueItems) {
+    this.uniqueItems = uniqueItems;
+  }
+
+  public JsonElement toJsonElement() {
+    JsonObject el = new JsonObject();
+    el.addProperty("type", "array");
+
+    JsonObject items = new JsonObject();
+    items.addProperty("type", itemType);
+
+    el.add("items", items);
+
+    if (minItems != null) {
+      el.addProperty("minItems", minItems);
+    }
+    if (uniqueItems != null) {
+      el.addProperty("uniqueItems", uniqueItems);
+    }
+    return el;
+  }
+}
+
+class JsonSchemaNumber extends JsonSchemaElement {
+  private Integer minimum = null;
+  private Integer maximum = null;
+  private Integer exclusiveMinimum = null;
+  private Integer exclusiveMaximum = null;
+
+  public void setMinimum(Integer minimum) {
+    this.minimum = minimum;
+  }
+
+  public void setMaximum(Integer maximum) {
+    this.maximum = maximum;
+  }
+
+  public void setExclusiveMinimum(Integer exclusiveMinimum) {
+    this.exclusiveMinimum = exclusiveMinimum;
+  }
+
+  public void setExclusiveMaximum(Integer exclusiveMaximum) {
+    this.exclusiveMaximum = exclusiveMaximum;
+  }
+
+  public JsonElement toJsonElement() {
+    JsonObject el = new JsonObject();
+    el.addProperty("type", "number");
+
+    if (minimum != null) {
+      el.addProperty("minimum", minimum);
+    }
+    if (maximum != null) {
+      el.addProperty("maximum", maximum);
+    }
+    if (exclusiveMinimum != null) {
+      el.addProperty("exclusiveMinimum", exclusiveMinimum);
+    }
+    if (exclusiveMaximum != null) {
+      el.addProperty("exclusiveMaximum", exclusiveMaximum);
     }
     return el;
   }
