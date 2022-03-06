@@ -120,10 +120,6 @@ public class JsonSchemaValidatorTest {
     }
 
     @Test
-    public void validateTypeField() {
-    }
-
-    @Test
     public void testValidateArray() throws JsonSchemaValidator.SchemaValidationException {
         JsonElement root = JsonParser.parseString(
                 "{\n" +
@@ -136,5 +132,44 @@ public class JsonSchemaValidatorTest {
                         "      \"uniqueItems\": true\n" +
                         "}");
         JsonSchemaValidator.validateArray(root.getAsJsonObject());
+    }
+
+    @Test
+    public void testValidateString() throws JsonSchemaValidator.SchemaValidationException {
+        JsonElement root = JsonParser.parseString(
+                "{\n" +
+                        "      \"description\": \"Tags for the product\",\n" +
+                        "      \"type\": \"string\",\n" +
+                        "      \"maxLength\": \"10\",\n" +
+                        "      \"minLength\": \"5\",\n" +
+                        "      \"pattern\": \"nice pattern\"\n" +
+                        "}");
+        JsonSchemaValidator.validateString(root.getAsJsonObject());
+    }
+
+    @Test
+    public void testValidateNumberAndInteger() throws JsonSchemaValidator.SchemaValidationException {
+        JsonElement root1 = JsonParser.parseString(
+                "{\n" +
+                        "      \"description\": \"Tags for the product\",\n" +
+                        "      \"type\": \"number\",\n" +
+                        "      \"multipleOf\": 10.5,\n" +
+                        "      \"minimum\": 6.1,\n" +
+                        "      \"maximum\": 15.5,\n" +
+                        "      \"exclusiveMinimum\": 5,\n" +
+                        "      \"exclusiveMaximum\": 20\n" +
+                        "}");
+        JsonElement root2 = JsonParser.parseString(
+                "{\n" +
+                        "      \"description\": \"Tags for the product\",\n" +
+                        "      \"type\": \"integer\",\n" +
+                        "      \"multipleOf\": 10,\n" +
+                        "      \"minimum\": 6,\n" +
+                        "      \"maximum\": 15,\n" +
+                        "      \"exclusiveMinimum\": 5,\n" +
+                        "      \"exclusiveMaximum\": 20\n" +
+                        "}");
+        JsonSchemaValidator.validateNumberAndInteger(root1.getAsJsonObject());
+        JsonSchemaValidator.validateNumberAndInteger(root2.getAsJsonObject());
     }
 }

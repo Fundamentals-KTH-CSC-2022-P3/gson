@@ -32,6 +32,22 @@ public abstract class JsonSchemaValidator {
         validateOptionalURIField("$id", object);
         validateTypeField(object);
 
+        if (object.has("title")){
+            try {
+                object.getAsJsonPrimitive("title").getAsString();
+            } catch (RuntimeException e) {
+                throw new SchemaValidationException("\"title\" must be a string", e);
+            }
+        }
+
+        if (object.has("description")){
+            try {
+                object.getAsJsonPrimitive("description").getAsString();
+            } catch (RuntimeException e) {
+                throw new SchemaValidationException("\"description\" must be a string", e);
+            }
+        }
+
         JsonElement types = object.get("type");
         if (types.isJsonArray()) {
             JsonArray list = types.getAsJsonArray();
@@ -50,14 +66,12 @@ public abstract class JsonSchemaValidator {
 
     static void validateMemberType(MemberTypes memberType, JsonObject schemaNode) throws SchemaValidationException{
         switch (memberType) {
-            case STRING:
-                //TODO validateString method
-                break;
             case NUMBER:
-                //TODO validateNumber method
-                break;
             case INTEGER:
-                //TODO validateInteger method
+                validateNumberAndInteger(schemaNode);
+                break;
+            case STRING:
+                validateString(schemaNode);
                 break;
             case OBJECT:
                 validateObject(schemaNode);
@@ -65,12 +79,69 @@ public abstract class JsonSchemaValidator {
             case ARRAY:
                 validateArray(schemaNode);
                 break;
-            case BOOLEAN:
-                //TODO validateBoolean method
-                break;
             default:
-                //TODO see if Null has any certain requirements
                 break;
+        }
+    }
+
+    static void validateString(JsonObject schemaNode) throws SchemaValidationException {
+        if (schemaNode.has("maxLength")) {
+            try {
+                int value = schemaNode.getAsJsonPrimitive("maxLength").getAsInt();
+                if (value < 0){
+                    throw new IllegalArgumentException();
+                }
+            } catch (RuntimeException e) {
+                throw new SchemaValidationException("\"maxLength\" must be a non-negative integer", e);
+            }
+        }
+        if (schemaNode.has("minLength")) {
+            try {
+                int value = schemaNode.getAsJsonPrimitive("minLength").getAsInt();
+                if (value < 0){
+                    throw new IllegalArgumentException();
+                }
+            } catch (RuntimeException e) {
+                throw new SchemaValidationException("\"minLength\" must be a non-negative integer", e);
+            }
+        }
+        if (schemaNode.has("pattern")) {
+            try {
+                schemaNode.getAsJsonPrimitive("pattern").getAsString();
+            } catch (RuntimeException e) {
+                throw new SchemaValidationException("\"pattern\" must be a string", e);
+            }
+        }
+    }
+
+    static void validateNumberAndInteger(JsonObject schemaNode) throws SchemaValidationException {
+
+        if (schemaNode.has("multipleOf")) {
+            try{
+                Number value = schemaNode.getAsJsonPrimitive("multipleOf").getAsNumber();
+                if (value.doubleValue() <= 0){
+                    throw new IllegalArgumentException("\"multipleOf\" must be strictly greater than 0");
+                }
+            } catch (IllegalArgumentException e){
+                throw new SchemaValidationException(e);
+            } catch (RuntimeException e){
+                throw new SchemaValidationException("\"multipleOf\" must be a number", e);
+            }
+        }
+
+        verifyFieldAsNumber(schemaNode, "exclusiveMinimum");
+        verifyFieldAsNumber(schemaNode, "exclusiveMaximum");
+        verifyFieldAsNumber(schemaNode, "minimum");
+        verifyFieldAsNumber(schemaNode, "maximum");
+    }
+
+    private static void verifyFieldAsNumber(JsonObject schemaNode, String key) throws SchemaValidationException {
+        if (schemaNode.has(key)) {
+            try{
+                schemaNode.getAsJsonPrimitive(key).getAsNumber();
+            } catch (RuntimeException e){
+                throw new SchemaValidationException("\"" + key + "\" must be a number", e);
+            }
         }
     }
 
@@ -114,7 +185,7 @@ public abstract class JsonSchemaValidator {
         if (schemaNode.has("prefixItems")){
             JsonArray prefixItemsArray = schemaNode.getAsJsonArray("prefixItems");
             if (prefixItemsArray.isEmpty()){
-                throw new SchemaValidationException("PrefixItems may not be empty");
+                throw new SchemaValidationException("\"prefixItems\" may not be empty");
             }
             for (JsonElement el : prefixItemsArray){
                 validateSchemaNode(el.getAsJsonObject());
@@ -125,7 +196,7 @@ public abstract class JsonSchemaValidator {
             try {
                 schemaNode.getAsJsonPrimitive("minItems").getAsInt();
             } catch (Throwable throwable){
-                throw new SchemaValidationException("minItems must be an integer", throwable);
+                throw new SchemaValidationException("\"minItems\" must be an integer", throwable);
             }
         }
 
@@ -133,7 +204,7 @@ public abstract class JsonSchemaValidator {
             try {
                 schemaNode.getAsJsonPrimitive("uniqueItems").getAsBoolean();
             } catch (Throwable throwable){
-                throw new SchemaValidationException("uniqueItems must be a boolean", throwable);
+                throw new SchemaValidationException("\"uniqueItems\" must be a boolean", throwable);
             }
         }
 
