@@ -34,17 +34,7 @@ import com.google.gson.internal.sql.SqlTypesSupport;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 
-import static com.google.gson.Gson.DEFAULT_COMPLEX_MAP_KEYS;
-import static com.google.gson.Gson.DEFAULT_DATE_PATTERN;
-import static com.google.gson.Gson.DEFAULT_ESCAPE_HTML;
-import static com.google.gson.Gson.DEFAULT_JSON_NON_EXECUTABLE;
-import static com.google.gson.Gson.DEFAULT_LENIENT;
-import static com.google.gson.Gson.DEFAULT_NUMBER_TO_NUMBER_STRATEGY;
-import static com.google.gson.Gson.DEFAULT_OBJECT_TO_NUMBER_STRATEGY;
-import static com.google.gson.Gson.DEFAULT_PRETTY_PRINT;
-import static com.google.gson.Gson.DEFAULT_SERIALIZE_NULLS;
-import static com.google.gson.Gson.DEFAULT_SPECIALIZE_FLOAT_VALUES;
-import static com.google.gson.Gson.DEFAULT_USE_JDK_UNSAFE;
+import static com.google.gson.Gson.*;
 
 /**
  * <p>Use this builder to construct a {@link Gson} instance when you need to set configuration
@@ -101,6 +91,7 @@ public final class GsonBuilder {
   private boolean useJdkUnsafe = DEFAULT_USE_JDK_UNSAFE;
   private ToNumberStrategy objectToNumberStrategy = DEFAULT_OBJECT_TO_NUMBER_STRATEGY;
   private ToNumberStrategy numberToNumberStrategy = DEFAULT_NUMBER_TO_NUMBER_STRATEGY;
+  private JsonSchemaMatcher schemaMatcher = DEFAULT_JSON_SCHEMA_MATCHER;
 
   /**
    * Creates a GsonBuilder instance that can be used to build Gson with various configuration
@@ -137,6 +128,7 @@ public final class GsonBuilder {
     this.useJdkUnsafe = gson.useJdkUnsafe;
     this.objectToNumberStrategy = gson.objectToNumberStrategy;
     this.numberToNumberStrategy = gson.numberToNumberStrategy;
+    this.schemaMatcher = gson.schemaMatcher;
   }
 
   /**
@@ -375,6 +367,27 @@ public final class GsonBuilder {
       excluder = excluder.withExclusionStrategy(strategy, true, true);
     }
     return this;
+  }
+
+  /**
+   * Sets the Gson schema matcher that is used to verify JSON with the Gson.matchesSchema() method.
+   *
+   * @param schemaMatcher an instance of a JsonSchemaMatcher
+   * @return a reference to this {@code GsonBuilder} object to fulfill the "Builder" pattern
+   */
+  public GsonBuilder setSchemaMatcher(JsonSchemaMatcher schemaMatcher) {
+    this.schemaMatcher = schemaMatcher;
+    return this;
+  }
+
+  /**
+   * Disables the schema matcher. This is equivalent to setting the schema matcher to the "true" schema, i.e. allowing
+   * every schema.
+   *
+   * @return a reference to this {@code GsonBuilder} object to fulfill the "Builder" pattern
+   */
+  public GsonBuilder disableSchemaMatcher() {
+    return setSchemaMatcher(DEFAULT_JSON_SCHEMA_MATCHER);
   }
 
   /**
@@ -654,7 +667,8 @@ public final class GsonBuilder {
         generateNonExecutableJson, escapeHtmlChars, prettyPrinting, lenient,
         serializeSpecialFloatingPointValues, useJdkUnsafe, longSerializationPolicy,
         datePattern, dateStyle, timeStyle,
-        this.factories, this.hierarchyFactories, factories, objectToNumberStrategy, numberToNumberStrategy);
+        this.factories, this.hierarchyFactories, factories, objectToNumberStrategy, numberToNumberStrategy,
+        schemaMatcher);
   }
 
   private void addTypeAdaptersForDate(String datePattern, int dateStyle, int timeStyle,

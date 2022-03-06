@@ -56,7 +56,8 @@ public final class GsonTest extends TestCase {
         true, true, false, true, LongSerializationPolicy.DEFAULT, null, DateFormat.DEFAULT,
         DateFormat.DEFAULT, new ArrayList<TypeAdapterFactory>(),
         new ArrayList<TypeAdapterFactory>(), new ArrayList<TypeAdapterFactory>(),
-        CUSTOM_OBJECT_TO_NUMBER_STRATEGY, CUSTOM_NUMBER_TO_NUMBER_STRATEGY);
+        CUSTOM_OBJECT_TO_NUMBER_STRATEGY, CUSTOM_NUMBER_TO_NUMBER_STRATEGY,
+        Gson.DEFAULT_JSON_SCHEMA_MATCHER);
 
     assertEquals(CUSTOM_EXCLUDER, gson.excluder);
     assertEquals(CUSTOM_FIELD_NAMING_STRATEGY, gson.fieldNamingStrategy());
@@ -70,7 +71,8 @@ public final class GsonTest extends TestCase {
         true, true, false, true, LongSerializationPolicy.DEFAULT, null, DateFormat.DEFAULT,
         DateFormat.DEFAULT, new ArrayList<TypeAdapterFactory>(),
         new ArrayList<TypeAdapterFactory>(), new ArrayList<TypeAdapterFactory>(),
-        CUSTOM_OBJECT_TO_NUMBER_STRATEGY, CUSTOM_NUMBER_TO_NUMBER_STRATEGY);
+        CUSTOM_OBJECT_TO_NUMBER_STRATEGY, CUSTOM_NUMBER_TO_NUMBER_STRATEGY,
+        Gson.DEFAULT_JSON_SCHEMA_MATCHER);
 
     Gson clone = original.newBuilder()
         .registerTypeAdapter(Object.class, new TestTypeAdapter())
@@ -151,5 +153,33 @@ public final class GsonTest extends TestCase {
       .newJsonReader(new StringReader(json));
     assertEquals("test", jsonReader.nextString());
     jsonReader.close();
+  }
+
+  public void testSchemaMatcherFailing() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher("false");
+    JsonElement instance = JsonParser.parseString("{\"foo\": \"bar\"}");
+    Gson gson = new GsonBuilder()
+            .setSchemaMatcher(matcher)
+            .create();
+    assertFalse(gson.matchesSchema(instance));
+  }
+
+  public void testSchemaMatcherSuccess() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher("true");
+    JsonElement instance = JsonParser.parseString("{\"foo\": \"bar\"}");
+    Gson gson = new GsonBuilder()
+            .setSchemaMatcher(matcher)
+            .create();
+    assertTrue(gson.matchesSchema(instance));
+  }
+
+  public void testDisableSchemaMatcher() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher("false");
+    JsonElement instance = JsonParser.parseString("{\"foo\": \"bar\"}");
+    Gson gson = new GsonBuilder()
+            .setSchemaMatcher(matcher)
+            .disableSchemaMatcher()
+            .create();
+    assertTrue(gson.matchesSchema(instance));
   }
 }
