@@ -41,9 +41,7 @@ public class JsonSchemaMatcherTest extends TestCase {
 
   private String exclusiveNumberSchema;
 
-  private String enumSchemaString = "{\n" +
-          "    \"enum\": [\"hello\", 23, true]\n" +
-          "}";
+  private String enumSchema;
 
   private String enumInstanceSuccessful = "\"hello\"";
 
@@ -121,6 +119,19 @@ public class JsonSchemaMatcherTest extends TestCase {
     schema.setExclusiveMinimum(1);
     schema.setExclusiveMaximum(3);
     exclusiveNumberSchema = schema.toJsonElement().toString();
+  }
+
+  /**
+   * The following setup function prepares this schema:
+   *    {"enum": ["hello", 23, true]}
+   */
+  @Before
+  public void createEnumSchema() {
+    JsonSchemaEnum schema = new JsonSchemaEnum();
+    schema.addValue("hello");
+    schema.addValue(23);
+    schema.addValue(true);
+    enumSchema = schema.toJsonElement().toString();
   }
 
   @Test
@@ -292,39 +303,21 @@ public class JsonSchemaMatcherTest extends TestCase {
     assertTrue(matcher.matches(instanceJsonElement));
   }
 
-  public void testEnumSchemaSuccessful() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
-    assertTrue(matcher.matches(enumInstanceSuccessful));
+  @Test
+  public void testMatcherCanSuccessfullyValidateStringsThatMatchEnumSchema() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchema);
+    assertTrue(matcher.matches("hello"));
+    assertTrue(matcher.matches("23"));
+    assertTrue(matcher.matches("true"));
   }
 
-  public void testEnumSchemaSuccessful2() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
-    assertTrue(matcher.matches(enumInstanceSuccessful2));
-  }
-
-  public void testEnumSchemaSuccessful3() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
-    assertTrue(matcher.matches(enumInstanceSuccessful3));
-  }
-
-  public void testEnumSchemaFailing() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
-    assertFalse(matcher.matches(enumInstanceFailing));
-  }
-
-  public void testEnumSchemaFailing2() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
-    assertFalse(matcher.matches(enumInstanceFailing2));
-  }
-
-  public void testEnumSchemaFailing3() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
-    assertFalse(matcher.matches(enumInstanceFailing3));
-  }
-
-  public void testEnumSchemaFailing4() {
-    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchemaString);
-    assertFalse(matcher.matches(enumInstanceFailing4));
+  @Test
+  public void testMatcherCanSuccessfullyValidateStringsThatDoNotMatchEnumSchema() {
+    JsonSchemaMatcher matcher = new JsonSchemaMatcher(enumSchema);
+    assertFalse(matcher.matches("bye"));
+    assertFalse(matcher.matches("24"));
+    assertFalse(matcher.matches("false"));
+    assertFalse(matcher.matches("null"));
   }
 }
 
@@ -447,6 +440,32 @@ class JsonSchemaNumber extends JsonSchemaElement {
     if (exclusiveMaximum != null) {
       el.addProperty("exclusiveMaximum", exclusiveMaximum);
     }
+    return el;
+  }
+}
+
+class JsonSchemaEnum extends JsonSchemaElement {
+  List<Object> allowed = new ArrayList<>();
+
+  public void addValue(Object val) {
+    allowed.add(val);
+  }
+
+  public JsonElement toJsonElement() {
+    JsonObject el = new JsonObject();
+
+    JsonArray arr = new JsonArray();
+    for (Object val : allowed) {
+      if (val instanceof Boolean) {
+        arr.add((Boolean) val);
+      } else if (val instanceof String) {
+        arr.add((String) val);
+      } else if (val instanceof Integer) {
+        arr.add((Integer) val);
+      }
+    }
+
+    el.add("enum", arr);
     return el;
   }
 }
