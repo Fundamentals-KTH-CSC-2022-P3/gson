@@ -170,8 +170,8 @@ public class JsonSchemaMatcher {
     if (schema.has("minItems") && instanceArray.size() < schema.get("minItems").getAsInt())
       return false;
 
-    // Check if the sub-schema has the "uniqueItems" property, if so, all elements in the array must be unique.
-    if (schema.has("uniqueItems")) {
+    // Check if the sub-schema has the "uniqueItems" property and if it is true, if so, all elements in the array must be unique.
+    if (schema.has("uniqueItems") && schema.get("uniqueItems").getAsBoolean()) {
       Set<JsonElement> found = new HashSet<>();
 
       for (JsonElement element : instanceArray) {
