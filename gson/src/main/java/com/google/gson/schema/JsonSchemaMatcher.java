@@ -1,5 +1,6 @@
-package com.google.gson;
+package com.google.gson.schema;
 
+import com.google.gson.*;
 import com.google.gson.stream.JsonReader;
 
 import java.io.Reader;
@@ -12,7 +13,7 @@ import java.util.Set;
 public class JsonSchemaMatcher {
 
   // The "true" schema matches any valid JSON
-  static final JsonSchemaMatcher ALLOW_EVERYTHING = new JsonSchemaMatcher("true");
+  public static final JsonSchemaMatcher ALLOW_EVERYTHING = new JsonSchemaMatcher("true");
 
   // The root of the schema file can be either a JSON object or a Boolean.
   private final JsonElement schemaRoot;

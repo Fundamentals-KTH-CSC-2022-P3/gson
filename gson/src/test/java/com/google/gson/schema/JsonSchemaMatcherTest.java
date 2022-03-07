@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-package com.google.gson;
+package com.google.gson.schema;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import junit.framework.TestCase;
 import org.junit.Before;
