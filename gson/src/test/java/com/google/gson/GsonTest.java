@@ -17,6 +17,7 @@
 package com.google.gson;
 
 import com.google.gson.internal.Excluder;
+import com.google.gson.schema.JsonSchemaMatcher;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import com.google.gson.stream.MalformedJsonException;

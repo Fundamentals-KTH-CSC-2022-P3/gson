@@ -1,5 +1,6 @@
-package com.google.gson;
+package com.google.gson.schema;
 
+import com.google.gson.*;
 import com.google.gson.stream.JsonReader;
 
 import java.io.Reader;

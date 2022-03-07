@@ -1,10 +1,10 @@
-package com.google.gson;
+package com.google.gson.schema;
 
-import junit.framework.TestCase;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.schema.JsonSchemaValidator;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 public class JsonSchemaValidatorTest {
 

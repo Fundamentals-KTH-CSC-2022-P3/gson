@@ -32,6 +32,7 @@ import com.google.gson.internal.bind.TreeTypeAdapter;
 import com.google.gson.internal.bind.TypeAdapters;
 import com.google.gson.internal.sql.SqlTypesSupport;
 import com.google.gson.reflect.TypeToken;
+import com.google.gson.schema.JsonSchemaMatcher;
 import com.google.gson.stream.JsonReader;
 
 import static com.google.gson.Gson.*;
